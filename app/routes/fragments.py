@@ -29,12 +29,15 @@ async def _auto_title(conversation_id: int, first_message: str, config):
 
         provider = get_provider(config.provider)
 
+        # DeepSeek needs headroom for reasoning tokens; other providers are fine with 30
+        title_max_tokens = 2000 if config.provider == "deepseek" else 30
+
         request = LLMRequest(
             model=config.model,
             api_key=api_key,
             system_prompt="Generate a SHORT title (max 6 words) summarizing the user's message. Reply with ONLY the title, no quotes.",
             messages=[{"role": "user", "content": first_message}],
-            max_tokens=30,
+            max_tokens=title_max_tokens,
         )
         response = await provider.generate(request)
         title = response.content.strip().strip('"').strip("'")[:50]
@@ -131,6 +134,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
 
     for config in responding:
         placeholder_id = f"placeholder-{config.id}-{user_msg.id}"
+        avatar_class = f"avatar-{config.id % 8}"
         html_parts.append(
             f'<div class="message llm generating" id="{placeholder_id}">'
             f'<div class="message-avatar {avatar_class}">{config.name[0]}</div>'
