@@ -115,11 +115,13 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     # Save user message
     user_msg = await queries.create_message(conversation_id, "user", content)
 
-    # #1: Auto-title generation — if this is the first user message, generate a title
+    # #1: Auto-title generation — only if conversation has no title yet and first user message
     all_msgs = await queries.get_messages(conversation_id)
     user_count = sum(1 for m in all_msgs if m.role == "user")
-    print(f"[AutoTitle] Check: user_count={user_count}, configs={len(configs)}", flush=True)
-    if user_count == 1 and configs:
+    conv = await queries.get_conversation(conversation_id)
+    title_empty = not conv or not conv.title
+    print(f"[AutoTitle] Check: user_count={user_count}, title_empty={title_empty}, configs={len(configs)}", flush=True)
+    if user_count == 1 and title_empty and configs:
         # Prefer Zhipu/GLM for title generation (free), fall back to first available
         title_llm = next((c for c in configs if c.provider == "zhipu"), configs[0])
         print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {title_llm.name}", flush=True)
@@ -151,7 +153,9 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     html_parts.append(f'''<script>
         (function() {{
             const MSG_ID = {msg_id};
+            if (window.__sseConnection) {{ window.__sseConnection.close(); }}
             const es = new EventSource("/stream/conversations/{conversation_id}");
+            window.__sseConnection = es;
             es.addEventListener("token", function(e) {{
                 const data = JSON.parse(e.data);
                 const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
@@ -189,6 +193,12 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     asyncio.create_task(orchestrate_llm_responses(conversation_id, queue, content))
 
     return Response(content="\n".join(html_parts), media_type="text/html")
+
+
+@router.put("/fragments/conversations/{conversation_id}/title")
+async def fragment_update_title(conversation_id: int, title: str = Form(...)):
+    await queries.update_conversation_title(conversation_id, title)
+    return f'<span id="conversation-title-text">{title}</span>'
 
 
 @router.get("/fragments/llm-configs", response_class=HTMLResponse)

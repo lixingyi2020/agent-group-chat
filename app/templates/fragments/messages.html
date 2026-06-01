@@ -1,5 +1,19 @@
 <div class="chat-header">
-    <span>{{ conversation.title or strings.app_title }}</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="conversation-title-text">{{ conversation.title or strings.app_title }}</span>
+        <span id="title-edit-btn" style="cursor: pointer; color: var(--text-muted); font-size: 11px;"
+              onclick="startEditTitle()" title="Edit title">✎</span>
+        <form id="title-edit-form" style="display: none; gap: 4px;"
+              hx-put="/fragments/conversations/{{ conversation.id }}/title"
+              hx-target="#conversation-title-text"
+              hx-swap="outerHTML"
+              hx-on::after-request="cancelEditTitle()">
+            <input name="title" id="title-edit-input" value="{{ conversation.title or '' }}"
+                   style="background: var(--bg-tertiary); border: 1px solid var(--accent-blue);
+                          border-radius: 4px; padding: 2px 6px; color: var(--text-primary); font-size: 13px; width: 200px;">
+            <button type="submit" style="display: none;"></button>
+        </form>
+    </div>
     <div style="display: flex; gap: 12px; align-items: center;">
         <!-- #2: Clickable LLM count dropdown -->
         <div class="llm-count-dropdown" style="position: relative;">
@@ -71,6 +85,30 @@
 </form>
 
 <script>
+// Title editing
+function startEditTitle() {
+    document.getElementById('title-edit-btn').style.display = 'none';
+    document.getElementById('conversation-title-text').style.display = 'none';
+    var form = document.getElementById('title-edit-form');
+    form.style.display = 'flex';
+    var input = document.getElementById('title-edit-input');
+    input.focus();
+    input.select();
+    input.addEventListener('blur', function() { form.querySelector('button').click(); });
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { form.querySelector('button').click(); }
+        if (e.key === 'Escape') { cancelEditTitle(); }
+    });
+}
+function cancelEditTitle() {
+    document.getElementById('title-edit-btn').style.display = '';
+    document.getElementById('conversation-title-text').style.display = '';
+    document.getElementById('title-edit-form').style.display = 'none';
+}
+
+// Close old SSE connection before creating a new one (prevents event stealing)
+if (window.__sseConnection) { window.__sseConnection.close(); }
+
 // #2: LLM count dropdown
 (function() {
     var btn = document.getElementById('llm-count-btn');
