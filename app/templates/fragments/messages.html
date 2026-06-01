@@ -132,7 +132,7 @@ if (window.__sseConnection) { window.__sseConnection.close(); }
 
 // #3: @mention autocomplete
 const LLM_NAMES = {{ llm_configs | map(attribute='name') | list | tojson }};
-LLM_NAMES.unshift("Everyone", "所有AI");  // @Everyone triggers all LLMs
+LLM_NAMES.unshift("{{ 'Everyone' if locale == 'en' else '所有AI' }}");  // @Everyone triggers all LLMs
 
 function handleMentionInput(input) {
     const cursorPos = input.selectionStart;
