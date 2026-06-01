@@ -1,0 +1,31 @@
+<div class="sidebar-header">{{ strings.conversations }}</div>
+<div class="sidebar-list" id="conversation-list">
+    {% if conversations %}
+        {% for conv in conversations %}
+        <a href="/conversations/{{ conv.id }}"
+           class="conversation-item {% if active_id == conv.id %}active{% endif %}"
+           hx-get="/fragments/conversations/{{ conv.id }}/messages"
+           hx-target="#chat-area"
+           hx-push-url="/conversations/{{ conv.id }}">
+            {{ conv.title or "Untitled" }}
+        </a>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">{{ strings.no_conversations }}</div>
+    {% endif %}
+</div>
+<div class="sidebar-footer">
+    <button class="btn-secondary"
+            hx-post="/fragments/conversations"
+            hx-target="#sidebar"
+            hx-swap="outerHTML">
+        {{ strings.new_chat }}
+    </button>
+    <div class="lang-switcher">
+        <span>{{ strings.language }}</span>
+        <select name="lang" hx-post="/fragments/settings/language" hx-swap="none">
+            <option value="zh" {% if locale == 'zh' %}selected{% endif %}>中文</option>
+            <option value="en" {% if locale == 'en' %}selected{% endif %}>English</option>
+        </select>
+    </div>
+</div>

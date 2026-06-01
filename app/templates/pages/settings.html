@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include "fragments/conversations.html" %}
+{% endblock %}
+{% block content %}
+<div style="padding: 24px; max-width: 700px; overflow-y: auto; height: 100%;">
+    <h2 style="margin-bottom: 20px;">{{ strings.settings }}</h2>
+
+    <h3 style="margin-bottom: 12px;">{{ strings.api_keys }}</h3>
+    {% for key in api_keys %}
+    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 14px; margin-bottom: 8px;
+                display: flex; justify-content: space-between; align-items: center;">
+        <span>{{ key.provider }} — ••••••••</span>
+        <button class="btn-secondary" style="width: auto;"
+                hx-delete="/settings/keys/{{ key.id }}"
+                hx-target="closest div" hx-swap="outerHTML">
+            {{ strings.delete }}
+        </button>
+    </div>
+    {% endfor %}
+
+    <form style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px;"
+          hx-post="/settings/keys" hx-target="this" hx-swap="outerHTML">
+        <select name="provider" required
+                style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                       border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google">Google</option>
+        </select>
+        <input name="key" type="password" placeholder="{{ strings.key }}" required
+               style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                      border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+        <button class="btn-secondary" type="submit">{{ strings.add_key }}</button>
+    </form>
+
+    <h3 style="margin-bottom: 12px;">{{ strings.llm_configs }}</h3>
+    <div id="llm-configs-container" hx-get="/fragments/llm-configs" hx-trigger="load">
+    </div>
+
+    <div style="margin-top: 32px;">
+        <h3 style="margin-bottom: 12px;">{{ strings.language }}</h3>
+        <select name="lang" hx-post="/fragments/settings/language" hx-swap="none"
+                style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                       border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            <option value="zh" {% if locale == 'zh' %}selected{% endif %}>中文</option>
+            <option value="en" {% if locale == 'en' %}selected{% endif %}>English</option>
+        </select>
+    </div>
+</div>
+{% endblock %}

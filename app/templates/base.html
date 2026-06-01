@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ strings.app_title }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/ext/sse.js"></script>
+    <script>
+        document.body.addEventListener("htmx:afterOnLoad", function(evt) {
+            const triggerHeader = evt.detail.xhr.getResponseHeader("HX-Trigger");
+            if (triggerHeader && triggerHeader.includes("sseConnect")) {
+                const path = window.location.pathname;
+                const match = path.match(/\/conversations\/(\d+)/);
+                if (match) {
+                    const convId = match[1];
+                    const es = new EventSource("/stream/conversations/" + convId);
+                    es.addEventListener("chunk", function(e) {
+                        const data = JSON.parse(e.data);
+                        const el = document.getElementById("placeholder-" + data.llm_config_id);
+                        if (el) {
+                            const bubble = el.querySelector(".message-bubble");
+                            if (bubble) {
+                                bubble.textContent += data.token;
+                                el.classList.remove("generating");
+                            }
+                        }
+                    });
+                    es.addEventListener("done", function(e) {
+                        const data = JSON.parse(e.data);
+                        const el = document.getElementById("placeholder-" + data.llm_config_id);
+                        if (el) el.classList.remove("generating");
+                        es.close();
+                    });
+                    es.addEventListener("error", function(e) {
+                        try {
+                            const data = JSON.parse(e.data);
+                            const el = document.getElementById("placeholder-" + data.llm_config_id);
+                            if (el) {
+                                const bubble = el.querySelector(".message-bubble");
+                                if (bubble) bubble.textContent = "[Error] " + (data.error || "");
+                                el.classList.remove("generating");
+                            }
+                        } catch (_) {}
+                        es.close();
+                    });
+                }
+            }
+        });
+    </script>
+</head>
+<body hx-ext="sse">
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            {% block sidebar %}{% endblock %}
+        </aside>
+        <main class="main-content" id="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

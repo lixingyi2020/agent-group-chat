@@ -1,0 +1,56 @@
+<div style="padding: 24px; max-width: 600px;">
+    <h2 style="margin-bottom: 16px;">{{ strings.llm_configs }}</h2>
+
+    {% for config in configs %}
+    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong>{{ config.name }}</strong>
+            <span style="font-size: 11px; color: var(--text-muted);">{{ config.provider }} / {{ config.model }}</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">
+            {{ strings.participation_mode }}: {{ config.participation_mode }}
+        </div>
+        <button class="btn-secondary" style="margin-top: 8px;"
+                hx-delete="/fragments/llm-configs/{{ config.id }}"
+                hx-target="closest div"
+                hx-swap="outerHTML">
+            {{ strings.delete }}
+        </button>
+    </div>
+    {% endfor %}
+
+    <details style="margin-top: 16px;">
+        <summary style="cursor: pointer; color: var(--accent-blue); font-size: 14px;">
+            {{ strings.add_llm }}
+        </summary>
+        <form style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"
+              hx-post="/fragments/llm-configs"
+              hx-target="previous div"
+              hx-swap="beforebegin">
+            <input name="name" placeholder="{{ strings.name }}" required
+                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            <select name="provider" required
+                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="google">Google</option>
+            </select>
+            <input name="model" placeholder="{{ strings.model }} (e.g. gpt-4o)" required
+                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            <select name="participation_mode" required
+                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+                <option value="mention_only">{{ strings.mention_only }}</option>
+                <option value="always">{{ strings.always }}</option>
+                <option value="probabilistic">{{ strings.probabilistic }}</option>
+            </select>
+            <input name="api_key_id" placeholder="API Key ID" type="number" required
+                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            <button class="btn-secondary" type="submit">{{ strings.save }}</button>
+        </form>
+    </details>
+</div>

@@ -1,0 +1,44 @@
+<div class="chat-header">
+    <span>{{ conversation.title or strings.app_title }}</span>
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <span style="color: var(--text-muted); font-size: 11px;">
+            {{ strings.llms_active.replace('{count}', llm_count|string) }}
+        </span>
+        <a href="/settings" class="settings-link">⚙ {{ strings.settings }}</a>
+    </div>
+</div>
+<div class="chat-messages" id="chat-messages">
+    {% for msg in messages %}
+        {% if msg.role == 'user' %}
+        <div class="message user" id="msg-{{ msg.id }}">
+            <div class="message-body">
+                <div class="message-bubble">{{ msg.content }}</div>
+            </div>
+        </div>
+        {% elif msg.role == 'llm' %}
+        <div class="message llm" id="msg-{{ msg.id }}">
+            {% set avatar_idx = (msg.llm_config_id or 0) % 8 %}
+            <div class="message-avatar avatar-{{ avatar_idx }}">
+                {{ msg.llm_name[0] if msg.llm_name else '?' }}
+            </div>
+            <div class="message-body">
+                <div class="message-sender">{{ msg.llm_name or 'LLM' }}</div>
+                <div class="message-bubble">{{ msg.content }}</div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+</div>
+<div class="chat-input-bar" id="chat-input-bar">
+    <input type="text" name="content" id="message-input"
+           placeholder="{{ strings.input_placeholder }}"
+           hx-post="/fragments/conversations/{{ conversation.id }}/messages"
+           hx-target="#chat-messages"
+           hx-swap="beforeend"
+           hx-include="#message-input"
+           hx-on::after-request="this.value = ''"
+           autocomplete="off">
+    <button onclick="document.getElementById('message-input').dispatchEvent(new Event('keydown', {key: 'Enter'}))">
+        {{ strings.send }}
+    </button>
+</div>
