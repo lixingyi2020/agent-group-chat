@@ -7,64 +7,7 @@
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4/dist/ext/sse.js"></script>
-    <script>
-        document.body.addEventListener("htmx:afterOnLoad", function(evt) {
-            const triggerHeader = evt.detail.xhr.getResponseHeader("HX-Trigger");
-            if (triggerHeader && triggerHeader.includes("sseConnect")) {
-                const path = window.location.pathname;
-                const match = path.match(/\/conversations\/(\d+)/);
-                if (!match) return;
-                const convId = match[1];
-                const es = new EventSource("/stream/conversations/" + convId);
-
-                es.addEventListener("token", function(e) {
-                    const data = JSON.parse(e.data);
-                    const el = document.getElementById("placeholder-" + data.llm_config_id);
-                    if (el) {
-                        const bubble = el.querySelector(".message-bubble");
-                        if (bubble) {
-                            bubble.textContent += data.token;
-                            el.classList.remove("generating");
-                        }
-                    }
-                });
-
-                es.addEventListener("complete", function(e) {
-                    const data = JSON.parse(e.data);
-                    const el = document.getElementById("placeholder-" + data.llm_config_id);
-                    if (el) {
-                        el.classList.remove("generating");
-                        const bubble = el.querySelector(".message-bubble");
-                        if (bubble && data.content) bubble.textContent = data.content;
-                        el.id = "msg-llm-" + data.message_id;
-                    }
-                });
-
-                es.addEventListener("llm-error", function(e) {
-                    const data = JSON.parse(e.data);
-                    const el = document.getElementById("placeholder-" + data.llm_config_id);
-                    if (el) {
-                        el.classList.remove("generating");
-                        const bubble = el.querySelector(".message-bubble");
-                        if (bubble) {
-                            bubble.textContent = "[Error] " + (data.error || "Unknown error");
-                            bubble.style.color = "#f87171";
-                        }
-                    }
-                });
-
-                // Native EventSource error = connection lost. Server auto-closes after idle.
-                es.onerror = function() {
-                    if (es.readyState === EventSource.CLOSED) {
-                        // Server closed normally (all done). Reload messages to get final state.
-                        setTimeout(function() {
-                            htmx.ajax("GET", "/fragments/conversations/" + convId + "/messages", "#chat-area");
-                        }, 500);
-                    }
-                };
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body hx-ext="sse">
     <div class="app-container">

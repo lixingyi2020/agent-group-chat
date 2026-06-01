@@ -206,4 +206,10 @@ function insertMention(input, name) {
     input.setSelectionRange(newCursor, newCursor);
     document.getElementById('mention-dropdown').style.display = 'none';
 }
+
+// Render markdown for all existing LLM messages on page load
+document.querySelectorAll('.message.llm .message-bubble:not(.rendered)').forEach(function(bubble) {
+    bubble.innerHTML = marked.parse(bubble.textContent);
+    bubble.classList.add('rendered');
+});
 </script>

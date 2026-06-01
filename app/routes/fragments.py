@@ -173,7 +173,10 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
                 if (el) {{
                     el.classList.remove("generating");
                     const bubble = el.querySelector(".message-bubble");
-                    if (bubble && data.content) bubble.textContent = data.content;
+                    if (bubble && data.content) {{
+                        bubble.innerHTML = marked.parse(data.content);
+                        bubble.classList.add("rendered");
+                    }}
                 }}
             }});
             es.addEventListener("llm-error", function(e) {{
