@@ -115,6 +115,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     # #1: Auto-title generation — if this is the first user message, generate a title
     all_msgs = await queries.get_messages(conversation_id)
     user_count = sum(1 for m in all_msgs if m.role == "user")
+    print(f"[AutoTitle] Check: user_count={user_count}, configs={len(configs)}", flush=True)
     if user_count == 1 and configs:
         print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {configs[0].name}", flush=True)
         asyncio.create_task(_auto_title(conversation_id, content, configs[0]))
@@ -123,15 +124,15 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     responding = [c for c in configs if should_respond(c, content)]
 
     # Build HTML: user message + placeholders for each responding LLM
+    # Placeholder IDs are unique per message to prevent cross-message merging
     html_parts = [f'<div class="message user" id="msg-{user_msg.id}">'
                   f'<div class="message-body"><div class="message-bubble">{user_msg.content}</div>'
                   f'</div></div>']
 
-    avatar_colors = [f"avatar-{i}" for i in range(8)]
     for config in responding:
-        avatar_class = avatar_colors[config.id % 8]
+        placeholder_id = f"placeholder-{config.id}-{user_msg.id}"
         html_parts.append(
-            f'<div class="message llm generating" id="placeholder-{config.id}">'
+            f'<div class="message llm generating" id="{placeholder_id}">'
             f'<div class="message-avatar {avatar_class}">{config.name[0]}</div>'
             f'<div class="message-body">'
             f'<div class="message-sender">{config.name}</div>'
@@ -140,12 +141,14 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
         )
 
     # Embed SSE connector script directly in the response
+    msg_id = user_msg.id  # used in placeholder IDs for uniqueness
     html_parts.append(f'''<script>
         (function() {{
+            const MSG_ID = {msg_id};
             const es = new EventSource("/stream/conversations/{conversation_id}");
             es.addEventListener("token", function(e) {{
                 const data = JSON.parse(e.data);
-                const el = document.getElementById("placeholder-" + data.llm_config_id);
+                const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
                 if (el) {{
                     const bubble = el.querySelector(".message-bubble");
                     if (bubble) {{
@@ -156,7 +159,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             }});
             es.addEventListener("complete", function(e) {{
                 const data = JSON.parse(e.data);
-                const el = document.getElementById("placeholder-" + data.llm_config_id);
+                const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
                 if (el) {{
                     el.classList.remove("generating");
                     const bubble = el.querySelector(".message-bubble");
@@ -165,7 +168,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             }});
             es.addEventListener("llm-error", function(e) {{
                 const data = JSON.parse(e.data);
-                const el = document.getElementById("placeholder-" + data.llm_config_id);
+                const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
                 if (el) {{
                     el.classList.remove("generating");
                     const bubble = el.querySelector(".message-bubble");
