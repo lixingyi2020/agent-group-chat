@@ -5,10 +5,7 @@
         <div class="conversation-item-wrapper" style="display: flex; align-items: center; gap: 4px;">
             <a href="/conversations/{{ conv.id }}"
                class="conversation-item {% if active_id == conv.id %}active{% endif %}"
-               style="flex: 1; min-width: 0;"
-               hx-get="/fragments/conversations/{{ conv.id }}/messages"
-               hx-target="#chat-area"
-               hx-push-url="/conversations/{{ conv.id }}">
+               style="flex: 1; min-width: 0;">
                 <span class="conv-title-text" id="conv-title-{{ conv.id }}">{{ conv.title or "Untitled" }}</span>
             </a>
             <span class="sidebar-edit-btn" id="sidebar-edit-btn-{{ conv.id }}"

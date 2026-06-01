@@ -4,7 +4,8 @@
 {% endblock %}
 {% block content %}
 <div style="padding: 24px; max-width: 700px; overflow-y: auto; height: 100%;">
-    <h2 style="margin-bottom: 20px;">{{ strings.settings }}</h2>
+    <a href="/" style="color: var(--accent-blue); font-size: 13px; text-decoration: none;">← Chat</a>
+    <h2 style="margin: 12px 0 20px 0;">{{ strings.settings }}</h2>
 
     <h3 style="margin-bottom: 12px;">{{ strings.api_keys }}</h3>
     {% for key in api_keys %}
