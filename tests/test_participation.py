@@ -55,3 +55,21 @@ def test_everyone_triggers_all():
 def test_everyone_overrides_self_reply():
     config = LLMConfig(name="claude", participation_mode="always")
     assert should_respond(config, "@Everyone what now?", is_self=True, mention_names=["Everyone"]) is True
+
+
+def test_specific_mention_blocks_others():
+    """When @claude is mentioned, other LLMs should NOT respond even in 'always' mode."""
+    claude = LLMConfig(name="claude", participation_mode="mention_only")
+    gpt = LLMConfig(name="gpt", participation_mode="always")
+    assert should_respond(claude, "Hey @claude", mention_names=["claude"]) is True
+    assert should_respond(gpt, "Hey @claude", mention_names=["claude"]) is False
+
+
+def test_mixed_mentions_only_mentioned_respond():
+    """@claude @gpt should trigger both, but not other LLMs."""
+    claude = LLMConfig(name="claude", participation_mode="mention_only")
+    gpt = LLMConfig(name="gpt", participation_mode="mention_only")
+    other = LLMConfig(name="other", participation_mode="always")
+    assert should_respond(claude, "@claude @gpt help", mention_names=["claude", "gpt"]) is True
+    assert should_respond(gpt, "@claude @gpt help", mention_names=["claude", "gpt"]) is True
+    assert should_respond(other, "@claude @gpt help", mention_names=["claude", "gpt"]) is False

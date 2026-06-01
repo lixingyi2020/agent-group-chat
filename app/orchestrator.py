@@ -58,12 +58,16 @@ def should_respond(config: LLMConfig, message_text: str, is_self: bool = False,
         mention_names = extract_mentions(message_text)
 
     # @Everyone triggers all LLMs regardless of participation mode
-    if EVERYONE_ALIASES & set(mention_names):
+    everyone_mentioned = bool(EVERYONE_ALIASES & set(mention_names))
+    if everyone_mentioned:
         return True
 
-    if config.name in mention_names:
-        return True
+    # If specific LLMs are @mentioned, ONLY those respond — ignore participation modes
+    specific_mentions = [n for n in mention_names if n not in EVERYONE_ALIASES]
+    if specific_mentions:
+        return config.name in specific_mentions
 
+    # No @mentions at all — use normal participation mode
     if is_self:
         return False
 
