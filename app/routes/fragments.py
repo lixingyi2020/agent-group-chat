@@ -2,7 +2,7 @@ import asyncio
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, Response
 from app.db import queries
-from app.db.models import LLMConfig
+from app.db.models import LLMConfig, ApiKey
 from app.i18n import get_locale, get_strings
 from app.templates import templates
 from app.orchestrator import orchestrate_llm_responses, should_respond, extract_mentions
@@ -134,6 +134,22 @@ async def fragment_create_llm_config(
         participation_mode=participation_mode, api_key_id=api_key_id,
     )
     await queries.create_llm_config(config)
+    locale = get_locale(request)
+    strings = get_strings(locale)
+    configs = await queries.list_llm_configs()
+    api_keys = await queries.list_api_keys()
+    return templates.TemplateResponse(
+        request,
+        "fragments/llm-configs.html",
+        {"request": request, "locale": locale, "strings": strings, "configs": configs, "api_keys": api_keys},
+    )
+
+
+@router.post("/fragments/quick-add-key", response_class=HTMLResponse)
+async def fragment_quick_add_key(request: Request, provider: str = Form(...), key: str = Form(...)):
+    from app.crypto import encrypt
+    encrypted = encrypt(key)
+    await queries.create_api_key(ApiKey(provider=provider, key_encrypted=encrypted))
     locale = get_locale(request)
     strings = get_strings(locale)
     configs = await queries.list_llm_configs()

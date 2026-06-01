@@ -57,9 +57,25 @@
             <button class="btn-secondary" type="submit">{{ strings.save }}</button>
         </form>
         {% else %}
-        <div style="font-size: 13px; color: #f59e0b; padding: 12px 0;">
-            No API keys configured. <a href="/settings" style="color: var(--accent-blue);">Add one in Settings</a> first.
+        <div style="font-size: 13px; color: #f59e0b; padding: 12px 0; margin-bottom: 8px;">
+            No API keys configured yet. Add one below:
         </div>
+        <form style="display: flex; flex-direction: column; gap: 10px;"
+              hx-post="/fragments/quick-add-key"
+              hx-target="#llm-configs-container"
+              hx-swap="innerHTML">
+            <select name="provider" required
+                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="google">Google</option>
+            </select>
+            <input name="key" type="password" placeholder="sk-..." required
+                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            <button class="btn-secondary" type="submit">{{ strings.add_key }}</button>
+        </form>
         {% endif %}
     </details>
 </div>
