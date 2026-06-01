@@ -84,9 +84,14 @@ def should_respond(config: LLMConfig, message_text: str, is_self: bool = False,
 
 async def _build_messages(conversation_id: int) -> list[dict]:
     db_messages = await queries.get_messages(conversation_id)
-    # Map internal roles to OpenAI-compatible roles
+    # Map internal roles to OpenAI-compatible roles; skip empty messages
     role_map = {"user": "user", "llm": "assistant", "system": "system"}
-    return [{"role": role_map.get(m.role, m.role), "content": m.content} for m in db_messages]
+    result = []
+    for m in db_messages:
+        if not m.content.strip():
+            continue
+        result.append({"role": role_map.get(m.role, m.role), "content": m.content})
+    return result
 
 
 async def _run_llm_generation(
@@ -131,6 +136,16 @@ async def _run_llm_generation(
                 "token": token,
             })
         print(f"[LLM] {config.name}: stream complete, {len(full_content)} chars. Pushing to queue...", flush=True)
+
+        if not full_content.strip():
+            print(f"[LLM] {config.name}: empty response, skipping save", flush=True)
+            await event_queue.put({
+                "type": "llm-error",
+                "llm_config_id": config.id,
+                "error": "Empty response (possibly all tokens consumed by reasoning)",
+                "retryable": False,
+            })
+            return None
 
         message = await queries.create_message(
             conversation_id, "llm", full_content, config.id
