@@ -73,7 +73,9 @@ def should_respond(config: LLMConfig, message_text: str, is_self: bool = False,
 
 async def _build_messages(conversation_id: int) -> list[dict]:
     db_messages = await queries.get_messages(conversation_id)
-    return [{"role": m.role, "content": m.content} for m in db_messages]
+    # Map internal roles to OpenAI-compatible roles
+    role_map = {"user": "user", "llm": "assistant", "system": "system"}
+    return [{"role": role_map.get(m.role, m.role), "content": m.content} for m in db_messages]
 
 
 async def _run_llm_generation(
