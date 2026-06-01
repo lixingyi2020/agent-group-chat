@@ -17,6 +17,7 @@ async def fragment_conversations(request: Request):
     strings = get_strings(locale)
     conversations = await queries.list_conversations()
     return templates.TemplateResponse(
+        request,
         "fragments/conversations.html",
         {"request": request, "locale": locale, "strings": strings,
          "conversations": conversations},
@@ -30,6 +31,7 @@ async def fragment_create_conversation(request: Request):
     conv = await queries.create_conversation()
     conversations = await queries.list_conversations()
     response = templates.TemplateResponse(
+        request,
         "fragments/conversations.html",
         {"request": request, "locale": locale, "strings": strings,
          "conversations": conversations, "active_id": conv.id},
@@ -60,6 +62,7 @@ async def fragment_messages(conversation_id: int, request: Request):
         })
 
     return templates.TemplateResponse(
+        request,
         "fragments/messages.html",
         {"request": request, "locale": locale, "strings": strings,
          "conversation": conversation, "messages": enriched,
@@ -110,6 +113,7 @@ async def fragment_llm_configs(request: Request):
     strings = get_strings(locale)
     configs = await queries.list_llm_configs()
     return templates.TemplateResponse(
+        request,
         "fragments/llm-configs.html",
         {"request": request, "locale": locale, "strings": strings, "configs": configs},
     )
@@ -133,6 +137,7 @@ async def fragment_create_llm_config(
     strings = get_strings(locale)
     configs = await queries.list_llm_configs()
     return templates.TemplateResponse(
+        request,
         "fragments/llm-configs.html",
         {"request": request, "locale": locale, "strings": strings, "configs": configs},
     )

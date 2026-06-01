@@ -20,6 +20,7 @@ async def create_key(request: Request, provider: str = Form(...), key: str = For
     api_keys = await queries.list_api_keys()
     configs = await queries.list_llm_configs()
     return templates.TemplateResponse(
+        request,
         "pages/settings.html",
         {"request": request, "locale": locale, "strings": strings,
          "conversations": conversations, "api_keys": api_keys, "configs": configs},
