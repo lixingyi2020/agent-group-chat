@@ -11,6 +11,35 @@ from app.routes.stream import get_or_create_queue
 router = APIRouter()
 
 
+async def _auto_title(conversation_id: int, first_message: str, config):
+    """Generate a short title for the conversation using the first available LLM."""
+    try:
+        from app.crypto import decrypt
+        from app.providers import get_provider
+        from app.providers.base import LLMRequest
+
+        key_record = await queries.get_api_key(config.api_key_id)
+        if not key_record:
+            return
+        api_key = decrypt(key_record.key_encrypted)
+        provider = get_provider(config.provider)
+
+        request = LLMRequest(
+            model=config.model,
+            api_key=api_key,
+            system_prompt="Generate a SHORT title (max 6 words) summarizing the user's message. Reply with ONLY the title, no quotes.",
+            messages=[{"role": "user", "content": first_message}],
+            max_tokens=30,
+        )
+        response = await provider.generate(request)
+        title = response.content.strip().strip('"').strip("'")[:50]
+        if title:
+            await queries.update_conversation_title(conversation_id, title)
+            print(f"[AutoTitle] Conversation {conversation_id}: {title}", flush=True)
+    except Exception as e:
+        print(f"[AutoTitle] Failed: {e}", flush=True)
+
+
 @router.get("/fragments/conversations", response_class=HTMLResponse)
 async def fragment_conversations(request: Request):
     locale = get_locale(request)
@@ -66,7 +95,7 @@ async def fragment_messages(conversation_id: int, request: Request):
         "fragments/messages.html",
         {"request": request, "locale": locale, "strings": strings,
          "conversation": conversation, "messages": enriched,
-         "llm_count": len(configs)},
+         "llm_count": len(configs), "llm_configs": configs},
     )
 
 
@@ -76,6 +105,12 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
 
     # Save user message
     user_msg = await queries.create_message(conversation_id, "user", content)
+
+    # #1: Auto-title generation — if this is the first user message, generate a title
+    all_msgs = await queries.get_messages(conversation_id)
+    user_count = sum(1 for m in all_msgs if m.role == "user")
+    if user_count == 1 and configs:
+        asyncio.create_task(_auto_title(conversation_id, content, configs[0]))
 
     # Determine which LLMs will respond
     responding = [c for c in configs if should_respond(c, content)]

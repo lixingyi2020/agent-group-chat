@@ -256,3 +256,11 @@ body {
 .avatar-5 { background: #7c3aed; }
 .avatar-6 { background: #0891b2; }
 .avatar-7 { background: #ca8a04; }
+
+/* LLM count dropdown */
+.llm-count-menu.show { display: block !important; }
+
+.llm-count-trigger:hover { color: var(--text-primary) !important; }
+
+/* @mention autocomplete */
+.mention-item:hover { background: var(--border-color); }

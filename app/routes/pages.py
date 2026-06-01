@@ -40,7 +40,7 @@ async def conversation_page(conversation_id: int, request: Request):
         })
 
     ctx = _make_context(request, conversations=conversations, conversation=conversation,
-                        messages=enriched, llm_count=len(configs), active_id=conversation_id)
+                        messages=enriched, llm_count=len(configs), llm_configs=configs, active_id=conversation_id)
     return templates.TemplateResponse(request, "pages/index.html", ctx)
 
 

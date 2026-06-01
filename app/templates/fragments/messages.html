@@ -1,12 +1,30 @@
 <div class="chat-header">
     <span>{{ conversation.title or strings.app_title }}</span>
     <div style="display: flex; gap: 12px; align-items: center;">
-        <span style="color: var(--text-muted); font-size: 11px;">
-            {{ strings.llms_active.replace('{count}', llm_count|string) }}
-        </span>
+        <!-- #2: Clickable LLM count dropdown -->
+        <div class="llm-count-dropdown" style="position: relative;">
+            <span class="llm-count-trigger" onclick="this.nextElementSibling.classList.toggle('show')"
+                  style="color: var(--text-muted); font-size: 11px; cursor: pointer; user-select: none;">
+                {{ strings.llms_active.replace('{count}', llm_count|string) }} ▾
+            </span>
+            <div class="llm-count-menu" style="display: none; position: absolute; top: 100%; right: 0;
+                     background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                     border-radius: 6px; padding: 6px 0; min-width: 180px; z-index: 100; margin-top: 4px;">
+                {% for c in llm_configs %}
+                <div style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span class="message-avatar avatar-{{ c.id % 8 }}" style="width: 20px; height: 20px; font-size: 10px;">
+                        {{ c.name[0] }}
+                    </span>
+                    <span style="color: var(--text-primary);">{{ c.name }}</span>
+                    <span style="color: var(--text-muted); font-size: 10px; margin-left: auto;">{{ c.provider }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
         <a href="/settings" class="settings-link">⚙ {{ strings.settings }}</a>
     </div>
 </div>
+
 <div class="chat-messages" id="chat-messages">
     {% for msg in messages %}
         {% if msg.role == 'user' %}
@@ -29,13 +47,112 @@
         {% endif %}
     {% endfor %}
 </div>
+
 <form class="chat-input-bar" id="chat-input-bar"
       hx-post="/fragments/conversations/{{ conversation.id }}/messages"
       hx-target="#chat-messages"
       hx-swap="beforeend"
       hx-on::after-request="this.reset()">
-    <input type="text" name="content" id="message-input"
-           placeholder="{{ strings.input_placeholder }}"
-           autocomplete="off">
+    <div style="position: relative; flex: 1;">
+        <input type="text" name="content" id="message-input"
+               placeholder="{{ strings.input_placeholder }}"
+               autocomplete="off"
+               oninput="handleMentionInput(this)"
+               onkeydown="handleMentionKeydown(event, this)"
+               style="width: 100%;">
+        <!-- #3: @mention autocomplete dropdown -->
+        <div id="mention-dropdown" class="mention-dropdown"
+             style="display: none; position: absolute; bottom: 100%; left: 0;
+                    background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                    border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 200;
+                    margin-bottom: 4px; min-width: 200px;"></div>
+    </div>
     <button type="submit">{{ strings.send }}</button>
 </form>
+
+<script>
+// Close LLM count dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.llm-count-dropdown')) {
+        document.querySelectorAll('.llm-count-menu').forEach(m => m.classList.remove('show'));
+    }
+});
+document.querySelectorAll('.llm-count-menu').forEach(m => { m.classList.add('show'); m.classList.remove('show'); });
+
+// #3: @mention autocomplete
+const LLM_NAMES = {{ llm_configs | map(attribute='name') | list | tojson }};
+
+function handleMentionInput(input) {
+    const cursorPos = input.selectionStart;
+    const textBeforeCursor = input.value.substring(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\S*)$/);
+    const dropdown = document.getElementById('mention-dropdown');
+
+    if (atMatch) {
+        const query = atMatch[1].toLowerCase();
+        const matches = LLM_NAMES.filter(n => n.toLowerCase().includes(query));
+        if (matches.length > 0) {
+            dropdown.innerHTML = matches.map((n, i) =>
+                '<div class="mention-item" data-index="' + i + '" data-name="' + n + '"' +
+                ' style="padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text-primary);"' +
+                ' onmousedown="selectMention(this)"' +
+                '>' + n + '</div>'
+            ).join('');
+            dropdown.style.display = 'block';
+            dropdown._selectedIndex = -1;
+            dropdown._matches = matches;
+            return;
+        }
+    }
+    dropdown.style.display = 'none';
+    dropdown._matches = [];
+}
+
+function handleMentionKeydown(e, input) {
+    const dropdown = document.getElementById('mention-dropdown');
+    if (dropdown.style.display === 'none') return;
+    if (!dropdown._matches) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        dropdown._selectedIndex = Math.min(dropdown._selectedIndex + 1, dropdown._matches.length - 1);
+        updateMentionSelection(dropdown);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        dropdown._selectedIndex = Math.max(dropdown._selectedIndex - 1, -1);
+        updateMentionSelection(dropdown);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+        if (dropdown._selectedIndex >= 0) {
+            e.preventDefault();
+            insertMention(input, dropdown._matches[dropdown._selectedIndex]);
+        }
+    } else if (e.key === 'Escape') {
+        dropdown.style.display = 'none';
+    }
+}
+
+function updateMentionSelection(dropdown) {
+    const items = dropdown.querySelectorAll('.mention-item');
+    items.forEach((item, i) => {
+        item.style.background = i === dropdown._selectedIndex ? 'var(--border-color)' : '';
+    });
+}
+
+function selectMention(el) {
+    const input = document.getElementById('message-input');
+    insertMention(input, el.dataset.name);
+}
+
+function insertMention(input, name) {
+    const cursorPos = input.selectionStart;
+    const textBefore = input.value.substring(0, cursorPos);
+    const textAfter = input.value.substring(cursorPos);
+    const atPos = textBefore.lastIndexOf('@');
+    const newText = textBefore.substring(0, atPos) + '@' + name + ' ' + textAfter;
+    input.value = newText;
+    input.focus();
+    const newCursor = atPos + name.length + 2;
+    input.setSelectionRange(newCursor, newCursor);
+    document.getElementById('mention-dropdown').style.display = 'none';
+}
+</script>
