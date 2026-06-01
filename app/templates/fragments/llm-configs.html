@@ -2,7 +2,7 @@
     <h2 style="margin-bottom: 16px;">{{ strings.llm_configs }}</h2>
 
     {% for config in configs %}
-    <div id="llm-config-{{ config.id }}" style="background: var(--bg-tertiary); border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+    <div id="llm-config-{{ config.id }}" class="llm-config-card">
         <!-- View mode -->
         <div id="llm-config-view-{{ config.id }}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
