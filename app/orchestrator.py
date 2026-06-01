@@ -82,9 +82,13 @@ async def _run_llm_generation(
     event_queue: asyncio.Queue,
     depth: int = 0,
 ) -> Optional[Message]:
+    provider = get_provider(config.provider)
+    request = None
+    print(f"[LLM] {config.name} ({config.provider}/{config.model}) starting...", flush=True)
     try:
         api_key_record = await queries.get_api_key(config.api_key_id)
         if not api_key_record:
+            print(f"[LLM] {config.name}: No API key found (id={config.api_key_id})", flush=True)
             raise ProviderError(f"No API key configured for {config.provider}", status_code=0, retryable=False)
 
         api_key = decrypt(api_key_record.key_encrypted)
@@ -98,13 +102,12 @@ async def _run_llm_generation(
             max_tokens=config.max_response_chars,
         )
 
-        provider = get_provider(config.provider)
         full_content = ""
 
         async for token in provider.generate_stream(request):
             full_content += token
             await event_queue.put({
-                "type": "chunk",
+                "type": "token",
                 "llm_config_id": config.id,
                 "token": token,
             })
@@ -114,9 +117,10 @@ async def _run_llm_generation(
         )
 
         await event_queue.put({
-            "type": "done",
+            "type": "complete",
             "llm_config_id": config.id,
             "message_id": message.id,
+            "content": full_content,
         })
 
         # Check for LLM-to-LLM mentions
@@ -133,27 +137,28 @@ async def _run_llm_generation(
         return message
 
     except ProviderError as e:
-        if e.retryable:
+        print(f"[LLM] {config.name}: ProviderError: {e} (retryable={e.retryable})", flush=True)
+        if e.retryable and request is not None:
             try:
                 response = await with_retries(provider.generate, request)
                 full_content = response.content
-                await event_queue.put({"type": "chunk", "llm_config_id": config.id, "token": full_content})
+                await event_queue.put({"type": "token", "llm_config_id": config.id, "token": full_content})
                 message = await queries.create_message(conversation_id, "llm", full_content, config.id)
-                await event_queue.put({"type": "done", "llm_config_id": config.id, "message_id": message.id})
+                await event_queue.put({"type": "complete", "llm_config_id": config.id, "message_id": message.id, "content": full_content})
                 return message
-            except Exception:
-                pass
+            except Exception as retry_err:
+                logger.warning(f"Retry failed for {config.name}: {retry_err}")
         await event_queue.put({
-            "type": "error",
+            "type": "llm-error",
             "llm_config_id": config.id,
             "error": str(e),
             "retryable": e.retryable,
         })
         return None
     except Exception as e:
-        logger.exception(f"Unexpected error for LLM {config.name}")
+        logger.exception(f"Unexpected error for LLM {config.name}: {e}")
         await event_queue.put({
-            "type": "error",
+            "type": "llm-error",
             "llm_config_id": config.id,
             "error": str(e),
             "retryable": False,
@@ -178,6 +183,8 @@ async def orchestrate_llm_responses(
         is_self = config.id == triggering_llm_config_id
         if should_respond(config, triggering_message_text, is_self=is_self, mention_names=mention_names):
             tasks_to_run.append(config)
+
+    print(f"[Orchestrator] Triggering {len(tasks_to_run)} LLMs: {[c.name for c in tasks_to_run]}", flush=True)
 
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
 

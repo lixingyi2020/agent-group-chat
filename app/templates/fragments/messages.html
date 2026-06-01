@@ -29,16 +29,13 @@
         {% endif %}
     {% endfor %}
 </div>
-<div class="chat-input-bar" id="chat-input-bar">
+<form class="chat-input-bar" id="chat-input-bar"
+      hx-post="/fragments/conversations/{{ conversation.id }}/messages"
+      hx-target="#chat-messages"
+      hx-swap="beforeend"
+      hx-on::after-request="this.reset()">
     <input type="text" name="content" id="message-input"
            placeholder="{{ strings.input_placeholder }}"
-           hx-post="/fragments/conversations/{{ conversation.id }}/messages"
-           hx-target="#chat-messages"
-           hx-swap="beforeend"
-           hx-include="#message-input"
-           hx-on::after-request="this.value = ''"
            autocomplete="off">
-    <button onclick="document.getElementById('message-input').dispatchEvent(new Event('keydown', {key: 'Enter'}))">
-        {{ strings.send }}
-    </button>
-</div>
+    <button type="submit">{{ strings.send }}</button>
+</form>
