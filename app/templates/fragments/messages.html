@@ -3,11 +3,11 @@
     <div style="display: flex; gap: 12px; align-items: center;">
         <!-- #2: Clickable LLM count dropdown -->
         <div class="llm-count-dropdown" style="position: relative;">
-            <span class="llm-count-trigger" onclick="this.nextElementSibling.classList.toggle('show')"
+            <span class="llm-count-trigger" id="llm-count-btn"
                   style="color: var(--text-muted); font-size: 11px; cursor: pointer; user-select: none;">
                 {{ strings.llms_active.replace('{count}', llm_count|string) }} ▾
             </span>
-            <div class="llm-count-menu" style="display: none; position: absolute; top: 100%; right: 0;
+            <div class="llm-count-menu" id="llm-count-menu" style="display: none; position: absolute; top: 100%; right: 0;
                      background: var(--bg-tertiary); border: 1px solid var(--border-color);
                      border-radius: 6px; padding: 6px 0; min-width: 180px; z-index: 100; margin-top: 4px;">
                 {% for c in llm_configs %}
@@ -71,13 +71,22 @@
 </form>
 
 <script>
-// Close LLM count dropdown when clicking outside
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.llm-count-dropdown')) {
-        document.querySelectorAll('.llm-count-menu').forEach(m => m.classList.remove('show'));
+// #2: LLM count dropdown
+(function() {
+    var btn = document.getElementById('llm-count-btn');
+    var menu = document.getElementById('llm-count-menu');
+    if (btn && menu) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.llm-count-dropdown')) {
+                menu.style.display = 'none';
+            }
+        });
     }
-});
-document.querySelectorAll('.llm-count-menu').forEach(m => { m.classList.add('show'); m.classList.remove('show'); });
+})();
 
 // #3: @mention autocomplete
 const LLM_NAMES = {{ llm_configs | map(attribute='name') | list | tojson }};

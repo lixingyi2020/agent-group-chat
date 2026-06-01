@@ -18,10 +18,15 @@ async def _auto_title(conversation_id: int, first_message: str, config):
         from app.providers import get_provider
         from app.providers.base import LLMRequest
 
+        print(f"[AutoTitle] Starting for conv {conversation_id} with {config.name} (key_id={config.api_key_id})", flush=True)
+
         key_record = await queries.get_api_key(config.api_key_id)
         if not key_record:
+            print(f"[AutoTitle] No API key found for key_id={config.api_key_id}", flush=True)
             return
         api_key = decrypt(key_record.key_encrypted)
+        print(f"[AutoTitle] Key decrypted, calling {config.provider}/{config.model}...", flush=True)
+
         provider = get_provider(config.provider)
 
         request = LLMRequest(
@@ -33,11 +38,12 @@ async def _auto_title(conversation_id: int, first_message: str, config):
         )
         response = await provider.generate(request)
         title = response.content.strip().strip('"').strip("'")[:50]
+        print(f"[AutoTitle] Response: '{response.content}' -> title: '{title}'", flush=True)
         if title:
             await queries.update_conversation_title(conversation_id, title)
-            print(f"[AutoTitle] Conversation {conversation_id}: {title}", flush=True)
+            print(f"[AutoTitle] Title saved: {title}", flush=True)
     except Exception as e:
-        print(f"[AutoTitle] Failed: {e}", flush=True)
+        print(f"[AutoTitle] Failed: {type(e).__name__}: {e}", flush=True)
 
 
 @router.get("/fragments/conversations", response_class=HTMLResponse)
@@ -110,6 +116,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     all_msgs = await queries.get_messages(conversation_id)
     user_count = sum(1 for m in all_msgs if m.role == "user")
     if user_count == 1 and configs:
+        print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {configs[0].name}", flush=True)
         asyncio.create_task(_auto_title(conversation_id, content, configs[0]))
 
     # Determine which LLMs will respond
