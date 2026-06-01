@@ -30,7 +30,7 @@ class LLMConfig:
     api_key_id: Optional[int] = None
     participation_mode: str = "mention_only"  # "mention_only", "always", "probabilistic"
     probability: float = 0.3
-    max_response_chars: int = 400
+    max_response_chars: int = 200
     system_prompt: Optional[str] = None
     created_at: str = ""
 

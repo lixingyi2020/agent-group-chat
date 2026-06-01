@@ -44,3 +44,14 @@ def test_self_reply_prevented():
 def test_self_reply_allowed_when_mentioned():
     config = LLMConfig(name="claude", participation_mode="always")
     assert should_respond(config, "I agree with @claude", is_self=True, mention_names=["claude"]) is True
+
+
+def test_everyone_triggers_all():
+    config = LLMConfig(name="claude", participation_mode="mention_only")
+    assert should_respond(config, "Hey @Everyone", mention_names=["Everyone"]) is True
+    assert should_respond(config, "Hey @所有AI", mention_names=["所有AI"]) is True
+
+
+def test_everyone_overrides_self_reply():
+    config = LLMConfig(name="claude", participation_mode="always")
+    assert should_respond(config, "@Everyone what now?", is_self=True, mention_names=["Everyone"]) is True

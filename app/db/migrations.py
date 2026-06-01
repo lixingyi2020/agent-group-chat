@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS llm_configs (
     api_key_id INTEGER,
     participation_mode TEXT NOT NULL DEFAULT 'mention_only',
     probability REAL NOT NULL DEFAULT 0.3,
-    max_response_chars INTEGER NOT NULL DEFAULT 400,
+    max_response_chars INTEGER NOT NULL DEFAULT 200,
     system_prompt TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (api_key_id) REFERENCES api_keys(id) ON DELETE SET NULL

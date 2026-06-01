@@ -49,10 +49,17 @@ def extract_mentions(text: str) -> list[str]:
     return MENTION_RE.findall(text)
 
 
+EVERYONE_ALIASES = {"Everyone", "everyone", "所有AI", "所有人", "all"}
+
+
 def should_respond(config: LLMConfig, message_text: str, is_self: bool = False,
                    mention_names: list[str] | None = None) -> bool:
     if mention_names is None:
         mention_names = extract_mentions(message_text)
+
+    # @Everyone triggers all LLMs regardless of participation mode
+    if EVERYONE_ALIASES & set(mention_names):
+        return True
 
     if config.name in mention_names:
         return True
