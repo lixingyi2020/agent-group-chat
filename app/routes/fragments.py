@@ -112,10 +112,11 @@ async def fragment_llm_configs(request: Request):
     locale = get_locale(request)
     strings = get_strings(locale)
     configs = await queries.list_llm_configs()
+    api_keys = await queries.list_api_keys()
     return templates.TemplateResponse(
         request,
         "fragments/llm-configs.html",
-        {"request": request, "locale": locale, "strings": strings, "configs": configs},
+        {"request": request, "locale": locale, "strings": strings, "configs": configs, "api_keys": api_keys},
     )
 
 
@@ -136,10 +137,11 @@ async def fragment_create_llm_config(
     locale = get_locale(request)
     strings = get_strings(locale)
     configs = await queries.list_llm_configs()
+    api_keys = await queries.list_api_keys()
     return templates.TemplateResponse(
         request,
         "fragments/llm-configs.html",
-        {"request": request, "locale": locale, "strings": strings, "configs": configs},
+        {"request": request, "locale": locale, "strings": strings, "configs": configs, "api_keys": api_keys},
     )
 
 

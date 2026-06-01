@@ -47,9 +47,19 @@
                 <option value="always">{{ strings.always }}</option>
                 <option value="probabilistic">{{ strings.probabilistic }}</option>
             </select>
-            <input name="api_key_id" placeholder="API Key ID" type="number" required
-                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+            {% if api_keys %}
+            <select name="api_key_id" required
+                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
+                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
+                {% for key in api_keys %}
+                <option value="{{ key.id }}">{{ key.provider }} — ••••••••</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <div style="font-size: 12px; color: #f59e0b; padding: 8px;">
+                No API keys configured. <a href="/settings" style="color: var(--accent-blue);">Add one in Settings</a> first.
+            </div>
+            {% endif %}
             <button class="btn-secondary" type="submit">{{ strings.save }}</button>
         </form>
     </details>
