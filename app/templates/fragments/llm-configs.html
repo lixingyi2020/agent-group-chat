@@ -23,10 +23,10 @@
         <summary style="cursor: pointer; color: var(--accent-blue); font-size: 14px;">
             {{ strings.add_llm }}
         </summary>
+        {% if api_keys %}
         <form style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"
               hx-post="/fragments/llm-configs"
-              hx-target="previous div"
-              hx-swap="beforebegin">
+              hx-target="#llm-configs-container">
             <input name="name" placeholder="{{ strings.name }}" required
                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
@@ -47,7 +47,6 @@
                 <option value="always">{{ strings.always }}</option>
                 <option value="probabilistic">{{ strings.probabilistic }}</option>
             </select>
-            {% if api_keys %}
             <select name="api_key_id" required
                     style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
                            border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
@@ -55,12 +54,12 @@
                 <option value="{{ key.id }}">{{ key.provider }} — ••••••••</option>
                 {% endfor %}
             </select>
-            {% else %}
-            <div style="font-size: 12px; color: #f59e0b; padding: 8px;">
-                No API keys configured. <a href="/settings" style="color: var(--accent-blue);">Add one in Settings</a> first.
-            </div>
-            {% endif %}
             <button class="btn-secondary" type="submit">{{ strings.save }}</button>
         </form>
+        {% else %}
+        <div style="font-size: 13px; color: #f59e0b; padding: 12px 0;">
+            No API keys configured. <a href="/settings" style="color: var(--accent-blue);">Add one in Settings</a> first.
+        </div>
+        {% endif %}
     </details>
 </div>
