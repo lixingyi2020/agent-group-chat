@@ -94,12 +94,18 @@ async def _run_llm_generation(
         api_key = decrypt(api_key_record.key_encrypted)
         messages = await _build_messages(conversation_id)
 
+        # Reasoning models (DeepSeek) burn tokens on internal thought — give them headroom
+        if config.provider == "deepseek":
+            max_tokens = max(config.max_response_chars * 4, 2000)
+        else:
+            max_tokens = config.max_response_chars
+
         request = LLMRequest(
             model=config.model,
             api_key=api_key,
             system_prompt=config.system_prompt,
             messages=messages,
-            max_tokens=config.max_response_chars,
+            max_tokens=max_tokens,
         )
 
         full_content = ""
