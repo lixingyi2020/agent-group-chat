@@ -17,7 +17,9 @@ def _row_to_message(row: tuple) -> Message:
 def _row_to_llm_config(row: tuple) -> LLMConfig:
     return LLMConfig(id=row[0], name=row[1], provider=row[2], model=row[3],
                      api_key_id=row[4], participation_mode=row[5], probability=row[6],
-                     max_response_chars=row[7], system_prompt=row[8], created_at=row[9])
+                     max_response_chars=row[7], system_prompt=row[8],
+                     is_title_generator=bool(row[10]) if len(row) > 10 else False,
+                     created_at=row[9] if len(row) <= 10 else row[10])
 
 
 def _row_to_api_key(row: tuple) -> ApiKey:
@@ -106,11 +108,11 @@ async def create_llm_config(config: LLMConfig) -> LLMConfig:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             """INSERT INTO llm_configs (name, provider, model, api_key_id,
-               participation_mode, probability, max_response_chars, system_prompt)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+               participation_mode, probability, max_response_chars, system_prompt, is_title_generator)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (config.name, config.provider, config.model, config.api_key_id,
              config.participation_mode, config.probability, config.max_response_chars,
-             config.system_prompt),
+             config.system_prompt, int(config.is_title_generator)),
         )
         await db.commit()
         row = await db.execute("SELECT * FROM llm_configs WHERE id = ?", (cursor.lastrowid,))
@@ -136,11 +138,12 @@ async def update_llm_config(config: LLMConfig) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """UPDATE llm_configs SET name=?, provider=?, model=?, api_key_id=?,
-               participation_mode=?, probability=?, max_response_chars=?, system_prompt=?
+               participation_mode=?, probability=?, max_response_chars=?, system_prompt=?,
+               is_title_generator=?
                WHERE id=?""",
             (config.name, config.provider, config.model, config.api_key_id,
              config.participation_mode, config.probability, config.max_response_chars,
-             config.system_prompt, config.id),
+             config.system_prompt, int(config.is_title_generator), config.id),
         )
         await db.commit()
 

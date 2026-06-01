@@ -32,6 +32,7 @@ class LLMConfig:
     probability: float = 0.3
     max_response_chars: int = 200
     system_prompt: Optional[str] = None
+    is_title_generator: bool = False
     created_at: str = ""
 
 

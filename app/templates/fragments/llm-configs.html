@@ -9,9 +9,12 @@
                 <strong>{{ config.name }}</strong>
                 <span style="font-size: 11px; color: var(--text-muted);">{{ config.provider }} / {{ config.model }}</span>
             </div>
-            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
                 {{ strings.participation_mode }}: {{ config.participation_mode }}
                 &nbsp;|&nbsp; {{ strings.max_response_chars }}: {{ config.max_response_chars }}
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                {% if config.is_title_generator %}★ Default for Conversation Title Generation{% endif %}
             </div>
             <div style="display: flex; gap: 8px;">
                 <button class="btn-secondary" style="width: auto;"
@@ -48,6 +51,12 @@
                     <option value="{{ key.id }}" {% if key.id == config.api_key_id %}selected{% endif %}>{{ key.provider }} — ••••••••</option>
                     {% endfor %}
                 </select>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;">
+                    <input type="checkbox" name="is_title_generator" value="true"
+                           {% if config.is_title_generator %}checked{% endif %}
+                           style="accent-color: var(--accent-blue);">
+                    Default for Conversation Title Generation
+                </label>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
                     <button class="btn-secondary" type="button" style="width: auto;"

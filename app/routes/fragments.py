@@ -122,8 +122,10 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     title_empty = not conv or not conv.title
     print(f"[AutoTitle] Check: user_count={user_count}, title_empty={title_empty}, configs={len(configs)}", flush=True)
     if user_count == 1 and title_empty and configs:
-        # Prefer Zhipu/GLM for title generation (free), fall back to first available
-        title_llm = next((c for c in configs if c.provider == "zhipu"), configs[0])
+        # Use the LLM flagged as title generator, or fall back to first available
+        title_llm = next((c for c in configs if c.is_title_generator), None)
+        if not title_llm:
+            title_llm = configs[0]
         print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {title_llm.name}", flush=True)
         asyncio.create_task(_auto_title(conversation_id, content, title_llm))
 
@@ -284,13 +286,24 @@ async def fragment_update_llm_config(
     model: str = Form(...),
     participation_mode: str = Form(...),
     api_key_id: int = Form(...),
+    is_title_generator: str = Form("false"),
 ):
+    is_title = is_title_generator in ("true", "on", "1")
+    if is_title:
+        # Mutual exclusion: uncheck all other configs
+        all_configs = await queries.list_llm_configs()
+        for c in all_configs:
+            if c.id != config_id and c.is_title_generator:
+                c.is_title_generator = False
+                await queries.update_llm_config(c)
+
     config = await queries.get_llm_config(config_id)
     if config:
         config.name = name
         config.model = model
         config.participation_mode = participation_mode
         config.api_key_id = api_key_id
+        config.is_title_generator = is_title
         await queries.update_llm_config(config)
     locale = get_locale(request)
     strings = get_strings(locale)

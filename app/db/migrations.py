@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS llm_configs (
     probability REAL NOT NULL DEFAULT 0.3,
     max_response_chars INTEGER NOT NULL DEFAULT 200,
     system_prompt TEXT,
+    is_title_generator INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (api_key_id) REFERENCES api_keys(id) ON DELETE SET NULL
 );
@@ -51,4 +52,9 @@ async def migrate(db_path: str) -> None:
     async with aiosqlite.connect(db_path) as db:
         await db.execute("PRAGMA foreign_keys = ON")
         await db.executescript(SCHEMA_SQL)
+        # Add is_title_generator column to existing databases
+        try:
+            await db.execute("ALTER TABLE llm_configs ADD COLUMN is_title_generator INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass  # Column already exists
         await db.commit()
