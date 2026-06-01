@@ -8,7 +8,7 @@ _providers: dict[str, tuple[type[BaseProvider], str | None]] = {
     "openai":       (OpenAIProvider, None),
     "anthropic":    (AnthropicProvider, None),
     "google":       (GoogleProvider, None),
-    "deepseek":     (OpenAIProvider, "https://api.deepseek.com/v1"),
+    "deepseek":     (OpenAIProvider, "https://api.deepseek.com"),
     "zhipu":        (OpenAIProvider, "https://open.bigmodel.cn/api/paas/v4"),
     "kimi":         (OpenAIProvider, "https://api.moonshot.cn/v1"),
     "openai_compatible": (OpenAIProvider, None),  # user provides base_url
