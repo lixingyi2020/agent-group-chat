@@ -120,8 +120,10 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     user_count = sum(1 for m in all_msgs if m.role == "user")
     print(f"[AutoTitle] Check: user_count={user_count}, configs={len(configs)}", flush=True)
     if user_count == 1 and configs:
-        print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {configs[0].name}", flush=True)
-        asyncio.create_task(_auto_title(conversation_id, content, configs[0]))
+        # Prefer Zhipu/GLM for title generation (free), fall back to first available
+        title_llm = next((c for c in configs if c.provider == "zhipu"), configs[0])
+        print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {title_llm.name}", flush=True)
+        asyncio.create_task(_auto_title(conversation_id, content, title_llm))
 
     # Determine which LLMs will respond
     responding = [c for c in configs if should_respond(c, content)]
