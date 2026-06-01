@@ -97,14 +97,47 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             f'</div></div>'
         )
 
-    response = Response(content="\n".join(html_parts), media_type="text/html")
-    response.headers["HX-Trigger"] = "sseConnect"
+    # Embed SSE connector script directly in the response
+    html_parts.append(f'''<script>
+        (function() {{
+            const es = new EventSource("/stream/conversations/{conversation_id}");
+            es.addEventListener("token", function(e) {{
+                const data = JSON.parse(e.data);
+                const el = document.getElementById("placeholder-" + data.llm_config_id);
+                if (el) {{
+                    const bubble = el.querySelector(".message-bubble");
+                    if (bubble) {{
+                        bubble.textContent += data.token;
+                        el.classList.remove("generating");
+                    }}
+                }}
+            }});
+            es.addEventListener("complete", function(e) {{
+                const data = JSON.parse(e.data);
+                const el = document.getElementById("placeholder-" + data.llm_config_id);
+                if (el) {{
+                    el.classList.remove("generating");
+                    const bubble = el.querySelector(".message-bubble");
+                    if (bubble && data.content) bubble.textContent = data.content;
+                }}
+            }});
+            es.addEventListener("llm-error", function(e) {{
+                const data = JSON.parse(e.data);
+                const el = document.getElementById("placeholder-" + data.llm_config_id);
+                if (el) {{
+                    el.classList.remove("generating");
+                    const bubble = el.querySelector(".message-bubble");
+                    if (bubble) bubble.textContent = "[Error] " + (data.error || "");
+                }}
+            }});
+        }})();
+    </script>''')
 
     # Kick off async orchestration
     queue = get_or_create_queue(conversation_id)
     asyncio.create_task(orchestrate_llm_responses(conversation_id, queue, content))
 
-    return response
+    return Response(content="\n".join(html_parts), media_type="text/html")
 
 
 @router.get("/fragments/llm-configs", response_class=HTMLResponse)
