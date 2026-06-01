@@ -7,7 +7,7 @@
               hx-put="/fragments/conversations/{{ conversation.id }}/title"
               hx-target="#conversation-title-text"
               hx-swap="outerHTML"
-              hx-on::after-request="cancelEditTitle()">
+              hx-on::after-request="cancelEditTitle(); refreshSidebarFromHeader('{{ conversation.title or '' }}')">
             <input name="title" id="title-edit-input" value="{{ conversation.title or '' }}"
                    style="background: var(--bg-tertiary); border: 1px solid var(--accent-blue);
                           border-radius: 4px; padding: 2px 6px; color: var(--text-primary); font-size: 13px; width: 200px;">
@@ -104,6 +104,10 @@ function cancelEditTitle() {
     document.getElementById('title-edit-btn').style.display = '';
     document.getElementById('conversation-title-text').style.display = '';
     document.getElementById('title-edit-form').style.display = 'none';
+}
+function refreshSidebarFromHeader(oldTitle) {
+    // After header edit, refresh the sidebar — simplest approach: reload the sidebar
+    htmx.ajax('GET', '/fragments/conversations', '#sidebar');
 }
 
 // Close old SSE connection before creating a new one (prevents event stealing)

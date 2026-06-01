@@ -198,7 +198,9 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
 @router.put("/fragments/conversations/{conversation_id}/title")
 async def fragment_update_title(conversation_id: int, title: str = Form(...)):
     await queries.update_conversation_title(conversation_id, title)
-    return f'<span id="conversation-title-text">{title}</span>'
+    # Return both the sidebar title span AND an OOB swap for the header title
+    return HTMLResponse(f'''<span id="conv-title-{conversation_id}">{title}</span>
+<span id="conversation-title-text" hx-swap-oob="true">{title}</span>''')
 
 
 @router.get("/fragments/llm-configs", response_class=HTMLResponse)
