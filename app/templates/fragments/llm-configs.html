@@ -2,20 +2,59 @@
     <h2 style="margin-bottom: 16px;">{{ strings.llm_configs }}</h2>
 
     {% for config in configs %}
-    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 14px; margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <strong>{{ config.name }}</strong>
-            <span style="font-size: 11px; color: var(--text-muted);">{{ config.provider }} / {{ config.model }}</span>
+    <div id="llm-config-{{ config.id }}" style="background: var(--bg-tertiary); border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+        <!-- View mode -->
+        <div id="llm-config-view-{{ config.id }}">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong>{{ config.name }}</strong>
+                <span style="font-size: 11px; color: var(--text-muted);">{{ config.provider }} / {{ config.model }}</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                {{ strings.participation_mode }}: {{ config.participation_mode }}
+                &nbsp;|&nbsp; {{ strings.max_response_chars }}: {{ config.max_response_chars }}
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-secondary" style="width: auto;"
+                        onclick="toggleEditConfig({{ config.id }})">✎ Edit</button>
+                <button class="btn-secondary" style="width: auto;"
+                        hx-delete="/fragments/llm-configs/{{ config.id }}"
+                        hx-target="#llm-config-{{ config.id }}"
+                        hx-swap="outerHTML">{{ strings.delete }}</button>
+            </div>
         </div>
-        <div style="font-size: 12px; color: var(--text-secondary);">
-            {{ strings.participation_mode }}: {{ config.participation_mode }}
+        <!-- Edit mode -->
+        <div id="llm-config-edit-{{ config.id }}" style="display: none;">
+            <form style="display: flex; flex-direction: column; gap: 8px;"
+                  hx-put="/fragments/llm-configs/{{ config.id }}"
+                  hx-target="#llm-config-{{ config.id }}"
+                  hx-swap="outerHTML">
+                <input name="name" value="{{ config.name }}" required
+                       style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                              border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
+                <input name="model" value="{{ config.model }}" required
+                       style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                              border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
+                <select name="participation_mode"
+                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                               border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
+                    <option value="mention_only" {% if config.participation_mode == 'mention_only' %}selected{% endif %}>{{ strings.mention_only }}</option>
+                    <option value="always" {% if config.participation_mode == 'always' %}selected{% endif %}>{{ strings.always }}</option>
+                    <option value="probabilistic" {% if config.participation_mode == 'probabilistic' %}selected{% endif %}>{{ strings.probabilistic }}</option>
+                </select>
+                <select name="api_key_id"
+                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                               border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
+                    {% for key in api_keys %}
+                    <option value="{{ key.id }}" {% if key.id == config.api_key_id %}selected{% endif %}>{{ key.provider }} — ••••••••</option>
+                    {% endfor %}
+                </select>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
+                    <button class="btn-secondary" type="button" style="width: auto;"
+                            onclick="toggleEditConfig({{ config.id }})">{{ strings.cancel }}</button>
+                </div>
+            </form>
         </div>
-        <button class="btn-secondary" style="margin-top: 8px;"
-                hx-delete="/fragments/llm-configs/{{ config.id }}"
-                hx-target="closest div"
-                hx-swap="outerHTML">
-            {{ strings.delete }}
-        </button>
     </div>
     {% endfor %}
 
@@ -85,3 +124,17 @@
         {% endif %}
     </details>
 </div>
+
+<script>
+function toggleEditConfig(id) {
+    var view = document.getElementById('llm-config-view-' + id);
+    var edit = document.getElementById('llm-config-edit-' + id);
+    if (view.style.display === 'none') {
+        view.style.display = '';
+        edit.style.display = 'none';
+    } else {
+        view.style.display = 'none';
+        edit.style.display = '';
+    }
+}
+</script>

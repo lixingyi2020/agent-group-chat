@@ -198,6 +198,22 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     return Response(content="\n".join(html_parts), media_type="text/html")
 
 
+@router.delete("/fragments/conversations/{conversation_id}")
+async def fragment_delete_conversation(conversation_id: int, request: Request):
+    await queries.delete_conversation(conversation_id)
+    # Refresh the sidebar and redirect to home
+    locale = get_locale(request)
+    strings = get_strings(locale)
+    conversations = await queries.list_conversations()
+    response = templates.TemplateResponse(
+        request,
+        "fragments/conversations.html",
+        {"request": request, "locale": locale, "strings": strings, "conversations": conversations},
+    )
+    response.headers["HX-Refresh"] = "true"
+    return response
+
+
 @router.put("/fragments/conversations/{conversation_id}/title")
 async def fragment_update_title(conversation_id: int, title: str = Form(...)):
     await queries.update_conversation_title(conversation_id, title)
@@ -249,6 +265,33 @@ async def fragment_quick_add_key(request: Request, provider: str = Form(...), ke
     from app.crypto import encrypt
     encrypted = encrypt(key)
     await queries.create_api_key(ApiKey(provider=provider, key_encrypted=encrypted))
+    locale = get_locale(request)
+    strings = get_strings(locale)
+    configs = await queries.list_llm_configs()
+    api_keys = await queries.list_api_keys()
+    return templates.TemplateResponse(
+        request,
+        "fragments/llm-configs.html",
+        {"request": request, "locale": locale, "strings": strings, "configs": configs, "api_keys": api_keys},
+    )
+
+
+@router.put("/fragments/llm-configs/{config_id}", response_class=HTMLResponse)
+async def fragment_update_llm_config(
+    request: Request,
+    config_id: int,
+    name: str = Form(...),
+    model: str = Form(...),
+    participation_mode: str = Form(...),
+    api_key_id: int = Form(...),
+):
+    config = await queries.get_llm_config(config_id)
+    if config:
+        config.name = name
+        config.model = model
+        config.participation_mode = participation_mode
+        config.api_key_id = api_key_id
+        await queries.update_llm_config(config)
     locale = get_locale(request)
     strings = get_strings(locale)
     configs = await queries.list_llm_configs()

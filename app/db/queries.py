@@ -55,6 +55,13 @@ async def get_conversation(conversation_id: int) -> Optional[Conversation]:
         return _row_to_conversation(row) if row else None
 
 
+async def delete_conversation(conversation_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("PRAGMA foreign_keys = ON")
+        await db.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+        await db.commit()
+
+
 async def update_conversation_title(conversation_id: int, title: str) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(

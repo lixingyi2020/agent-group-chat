@@ -14,6 +14,12 @@
             <span class="sidebar-edit-btn" id="sidebar-edit-btn-{{ conv.id }}"
                   style="cursor: pointer; color: var(--text-muted); font-size: 10px; flex-shrink: 0; padding: 2px;"
                   onclick="startSidebarEdit({{ conv.id }}, '{{ conv.title or '' }}')" title="Edit title">✎</span>
+            <span style="cursor: pointer; color: var(--text-muted); font-size: 10px; flex-shrink: 0; padding: 2px;"
+                  hx-delete="/fragments/conversations/{{ conv.id }}"
+                  hx-target="#sidebar"
+                  hx-swap="outerHTML"
+                  hx-confirm="{{ 'Delete this conversation?' if locale == 'en' else '确定删除此对话？' }}"
+                  title="Delete">✕</span>
             <form id="sidebar-edit-form-{{ conv.id }}" style="display: none; flex: 1;"
                   hx-put="/fragments/conversations/{{ conv.id }}/title"
                   hx-target="#conv-title-{{ conv.id }}"
