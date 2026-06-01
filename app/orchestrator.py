@@ -119,6 +119,7 @@ async def _run_llm_generation(
                 "llm_config_id": config.id,
                 "token": token,
             })
+        print(f"[LLM] {config.name}: stream complete, {len(full_content)} chars. Pushing to queue...", flush=True)
 
         message = await queries.create_message(
             conversation_id, "llm", full_content, config.id
@@ -130,6 +131,7 @@ async def _run_llm_generation(
             "message_id": message.id,
             "content": full_content,
         })
+        print(f"[LLM] {config.name}: complete event pushed. DB message id={message.id}", flush=True)
 
         # Check for LLM-to-LLM mentions
         if depth < MAX_CHAIN_DEPTH:
