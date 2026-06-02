@@ -67,7 +67,7 @@
     <div class="settings-card-header">{{ strings.add_llm }}</div>
     {% if api_keys %}
     <form hx-post="/fragments/llm-configs"
-          hx-target="#llm-configs-container" style="display: contents;">
+          hx-target="#llm-configs-container">
         <div class="settings-row">
             <span class="row-label">{{ strings.provider }}</span>
             <div class="row-control">
@@ -109,7 +109,7 @@
     </div>
     <form hx-post="/fragments/quick-add-key"
           hx-target="#llm-configs-container"
-          hx-swap="innerHTML" style="display: contents;">
+          hx-swap="innerHTML">
         <div class="settings-row">
             <span class="row-label">{{ strings.provider }}</span>
             <div class="row-control">
