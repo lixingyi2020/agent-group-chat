@@ -1,7 +1,7 @@
 @echo off
 echo Building agent-chat Windows desktop app...
 
-pyinstaller ^
+python -m PyInstaller ^
   --onedir ^
   --name "agent-chat" ^
   --add-data "app;app" ^
