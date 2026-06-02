@@ -3,48 +3,155 @@
     {% include "fragments/conversations.html" %}
 {% endblock %}
 {% block content %}
-<div class="settings-page">
-    <a href="/" class="back-link">← Chat</a>
-    <h2>{{ strings.settings }}</h2>
+<div class="settings-layout">
+    <!-- Left sidebar navigation -->
+    <nav class="settings-nav" id="settings-nav">
+        <div class="settings-nav-header">{{ strings.settings }}</div>
+        <div class="settings-nav-item active" data-section="api-keys">
+            <span class="settings-nav-icon">🔑</span> {{ strings.api_keys }}
+        </div>
+        <div class="settings-nav-item" data-section="llm-configs">
+            <span class="settings-nav-icon">⚡</span> {{ strings.llm_configs }}
+        </div>
+        <div class="settings-nav-item" data-section="agents">
+            <span class="settings-nav-icon">🤖</span> {{ strings.agents }}
+        </div>
+        <div class="settings-nav-item" data-section="language">
+            <span class="settings-nav-icon">🌐</span> {{ strings.language }}
+        </div>
+    </nav>
 
-    <h3>{{ strings.api_keys }}</h3>
-    {% for key in api_keys %}
-    <div class="key-card">
-        <span>{{ key.provider }} — ••••••••</span>
-        <button class="btn-secondary" style="width: auto;"
-                hx-delete="/settings/keys/{{ key.id }}"
-                hx-target="closest div" hx-swap="outerHTML">
-            {{ strings.delete }}
-        </button>
-    </div>
-    {% endfor %}
+    <!-- Right content area -->
+    <div class="settings-content" id="settings-content">
+        <a href="/" class="settings-back">← Chat</a>
+        <input type="text" class="settings-search" id="settings-search"
+               placeholder="{% if locale == 'zh' %}搜索设置...{% else %}Search settings...{% endif %}">
 
-    <form style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px;"
-          hx-post="/settings/keys" hx-target="this" hx-swap="outerHTML">
-        <select name="provider" required>
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="google">Google</option>
-            <option value="deepseek">DeepSeek</option>
-            <option value="zhipu">智谱 (GLM)</option>
-            <option value="kimi">Kimi (Moonshot)</option>
-        </select>
-        <input name="key" type="password" placeholder="{{ strings.key }}" required>
-        <button class="btn-secondary" type="submit">{{ strings.add_key }}</button>
-    </form>
+        <!-- API Keys Section -->
+        <div class="settings-section" id="section-api-keys">
+            <h2>{{ strings.api_keys }}</h2>
+            <p class="section-desc">{% if locale == 'zh' %}配置 LLM 提供商的 API 密钥。{% else %}Configure API keys for LLM providers.{% endif %}</p>
+            {% for key in api_keys %}
+            <div class="settings-card" data-key-id="{{ key.id }}">
+                <div class="settings-row">
+                    <span class="row-label">{{ key.provider }}</span>
+                    <div class="row-control">
+                        <span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.72rem;">••••••••</span>
+                        <button class="btn-secondary" style="width: auto;"
+                                hx-delete="/settings/keys/{{ key.id }}"
+                                hx-target="closest .settings-card" hx-swap="outerHTML">
+                            {{ strings.delete }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="settings-card">
+                <div class="settings-card-header">{{ strings.add_key }}</div>
+                <form class="settings-add-row"
+                      hx-post="/settings/keys" hx-target="this" hx-swap="outerHTML">
+                    <select name="provider" required>
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="google">Google</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="zhipu">智谱 (GLM)</option>
+                        <option value="kimi">Kimi (Moonshot)</option>
+                    </select>
+                    <input name="key" type="password" placeholder="{{ strings.key }}" required>
+                    <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.add_key }}</button>
+                </form>
+            </div>
+        </div>
 
-    <h3>{{ strings.llm_configs }}</h3>
-    <div id="llm-configs-container" hx-get="/fragments/llm-configs" hx-trigger="load"></div>
+        <!-- LLM Configs Section -->
+        <div class="settings-section" id="section-llm-configs">
+            <h2>{{ strings.llm_configs }}</h2>
+            <p class="section-desc">{% if locale == 'zh' %}配置 LLM 提供商、模型和响应限制。{% else %}Configure LLM providers, models, and response limits.{% endif %}</p>
+            <div id="llm-configs-container" hx-get="/fragments/llm-configs" hx-trigger="load"></div>
+        </div>
 
-    <h3>{{ strings.agents }}</h3>
-    <div id="agents-container" hx-get="/fragments/agents" hx-trigger="load"></div>
+        <!-- AI Agents Section -->
+        <div class="settings-section" id="section-agents">
+            <h2>{{ strings.agents }}</h2>
+            <p class="section-desc">{% if locale == 'zh' %}创建具有不同个性的 AI 助手。每个助手使用一个 LLM 配置作为后端。{% else %}Create AI agents with distinct personalities. Each agent uses an LLM config as its backend.{% endif %}</p>
+            <div id="agents-container" hx-get="/fragments/agents" hx-trigger="load"></div>
+        </div>
 
-    <div style="margin-top: 32px;">
-        <h3>{{ strings.language }}</h3>
-        <select name="lang" hx-post="/fragments/settings/language" hx-swap="none">
-            <option value="zh" {% if locale == 'zh' %}selected{% endif %}>中文</option>
-            <option value="en" {% if locale == 'en' %}selected{% endif %}>English</option>
-        </select>
+        <!-- Language Section -->
+        <div class="settings-section" id="section-language">
+            <h2>{{ strings.language }}</h2>
+            <p class="section-desc">{% if locale == 'zh' %}选择界面显示语言。{% else %}Choose your preferred interface language.{% endif %}</p>
+            <div class="settings-card">
+                <div class="settings-row">
+                    <span class="row-label">{{ strings.language }}</span>
+                    <div class="row-control">
+                        <select name="lang" hx-post="/fragments/settings/language" hx-swap="none">
+                            <option value="zh" {% if locale == 'zh' %}selected{% endif %}>中文</option>
+                            <option value="en" {% if locale == 'en' %}selected{% endif %}>English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+(function() {
+    // Sidebar nav: highlight active section on click + smooth scroll
+    var nav = document.getElementById('settings-nav');
+    var navItems = nav.querySelectorAll('.settings-nav-item');
+
+    navItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+            var sectionId = 'section-' + this.dataset.section;
+            var section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // Scroll spy: highlight nav item based on visible section
+    var content = document.getElementById('settings-content');
+    var sections = document.querySelectorAll('.settings-section');
+    if (content) {
+        content.addEventListener('scroll', function() {
+            var current = '';
+            sections.forEach(function(section) {
+                var rect = section.getBoundingClientRect();
+                if (rect.top <= 120) {
+                    current = section.id.replace('section-', '');
+                }
+            });
+            navItems.forEach(function(item) {
+                item.classList.toggle('active', item.dataset.section === current);
+            });
+        });
+    }
+
+    // Search: filter sections and cards
+    var search = document.getElementById('settings-search');
+    if (search) {
+        search.addEventListener('input', function() {
+            var query = this.value.toLowerCase();
+            sections.forEach(function(section) {
+                var visible = false;
+                var cards = section.querySelectorAll('.settings-card');
+                cards.forEach(function(card) {
+                    var text = card.textContent.toLowerCase();
+                    var match = !query || text.includes(query);
+                    card.style.display = match ? '' : 'none';
+                    if (match) visible = true;
+                });
+                section.style.display = visible || !query ? '' : 'none';
+            });
+            if (!query) {
+                sections.forEach(function(s) { s.style.display = ''; });
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

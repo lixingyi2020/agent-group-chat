@@ -1,20 +1,10 @@
-<div style="padding: 24px; max-width: 600px;">
-    <h2 style="margin-bottom: 16px;">{{ strings.llm_configs }}</h2>
-
-    {% for config in configs %}
-    <div id="llm-config-{{ config.id }}" class="llm-config-card">
-        <!-- View mode -->
-        <div id="llm-config-view-{{ config.id }}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <strong>{{ config.provider }} / {{ config.model }}</strong>
-            </div>
-            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
-                {{ strings.max_response_chars }}: {{ config.max_response_chars }}
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                {% if config.is_title_generator %}★ Default for Conversation Title Generation{% endif %}
-            </div>
-            <div style="display: flex; gap: 8px;">
+{% for config in configs %}
+<div id="llm-config-{{ config.id }}" class="settings-card" data-searchable="{{ config.provider }} {{ config.model }}">
+    <!-- View mode -->
+    <div id="llm-config-view-{{ config.id }}">
+        <div class="settings-row">
+            <span class="row-label">{{ config.provider }} / {{ config.model }}</span>
+            <div class="row-control">
                 <button class="btn-secondary" style="width: auto;"
                         onclick="toggleEditConfig({{ config.id }})">✎ Edit</button>
                 <button class="btn-secondary" style="width: auto;"
@@ -23,93 +13,129 @@
                         hx-swap="outerHTML">{{ strings.delete }}</button>
             </div>
         </div>
-        <!-- Edit mode -->
-        <div id="llm-config-edit-{{ config.id }}" style="display: none;">
-            <form style="display: flex; flex-direction: column; gap: 8px;"
-                  hx-put="/fragments/llm-configs/{{ config.id }}"
-                  hx-target="#llm-config-{{ config.id }}"
-                  hx-swap="outerHTML">
-                <input name="model" value="{{ config.model }}" required
-                       style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                              border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
-                <select name="api_key_id"
-                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
-                    {% for key in api_keys %}
-                    <option value="{{ key.id }}" {% if key.id == config.api_key_id %}selected{% endif %}>{{ key.provider }} — ••••••••</option>
-                    {% endfor %}
-                </select>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;">
+        <div class="settings-row">
+            <span class="row-label">{{ strings.max_response_chars }}</span>
+            <span style="font-size: 0.78rem; color: var(--text-secondary); font-family: var(--font-mono);">{{ config.max_response_chars }}</span>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{% if locale == 'zh' %}默认生成标题{% else %}Default Title Generator{% endif %}</span>
+            <span style="font-size: 0.78rem;">{% if config.is_title_generator %}★{% else %}—{% endif %}</span>
+        </div>
+    </div>
+    <!-- Edit mode -->
+    <div id="llm-config-edit-{{ config.id }}" style="display: none;">
+        <form hx-put="/fragments/llm-configs/{{ config.id }}"
+              hx-target="#llm-config-{{ config.id }}"
+              hx-swap="outerHTML">
+            <div class="settings-row">
+                <span class="row-label">{{ strings.model }}</span>
+                <div class="row-control">
+                    <input name="model" value="{{ config.model }}" required>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{{ strings.api_keys }}</span>
+                <div class="row-control">
+                    <select name="api_key_id">
+                        {% for key in api_keys %}
+                        <option value="{{ key.id }}" {% if key.id == config.api_key_id %}selected{% endif %}>{{ key.provider }} — ••••••••</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{% if locale == 'zh' %}默认生成标题{% else %}Default Title Generator{% endif %}</span>
+                <div class="row-control">
                     <input type="checkbox" name="is_title_generator" value="true"
                            {% if config.is_title_generator %}checked{% endif %}
-                           style="accent-color: var(--accent-blue);">
-                    Default for Conversation Title Generation
-                </label>
-                <div style="display: flex; gap: 8px;">
+                           style="accent-color: var(--accent);">
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="row-control" style="margin-left: auto;">
                     <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
                     <button class="btn-secondary" type="button" style="width: auto;"
                             onclick="toggleEditConfig({{ config.id }})">{{ strings.cancel }}</button>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
-    {% endfor %}
+</div>
+{% endfor %}
 
-    <details style="margin-top: 16px;">
-        <summary style="cursor: pointer; color: var(--accent-blue); font-size: 14px;">
-            {{ strings.add_llm }}
-        </summary>
-        {% if api_keys %}
-        <form style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"
-              hx-post="/fragments/llm-configs"
-              hx-target="#llm-configs-container">
-            <select name="provider" required
-                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="google">Google</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="zhipu">智谱 (GLM)</option>
-                <option value="kimi">Kimi (Moonshot)</option>
-            </select>
-            <input name="model" placeholder="{{ strings.model }} (e.g. gpt-4o)" required
-                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-            <select name="api_key_id" required
-                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-                {% for key in api_keys %}
-                <option value="{{ key.id }}">{{ key.provider }} — ••••••••</option>
-                {% endfor %}
-            </select>
-            <button class="btn-secondary" type="submit">{{ strings.save }}</button>
-        </form>
-        {% else %}
-        <div style="font-size: 13px; color: #f59e0b; padding: 12px 0; margin-bottom: 8px;">
-            No API keys configured yet. Add one below:
+<div class="settings-card" id="llm-config-add">
+    <div class="settings-card-header">{{ strings.add_llm }}</div>
+    {% if api_keys %}
+    <form hx-post="/fragments/llm-configs"
+          hx-target="#llm-configs-container" style="display: contents;">
+        <div class="settings-row">
+            <span class="row-label">{{ strings.provider }}</span>
+            <div class="row-control">
+                <select name="provider" required>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="zhipu">智谱 (GLM)</option>
+                    <option value="kimi">Kimi (Moonshot)</option>
+                </select>
+            </div>
         </div>
-        <form style="display: flex; flex-direction: column; gap: 10px;"
-              hx-post="/fragments/quick-add-key"
-              hx-target="#llm-configs-container"
-              hx-swap="innerHTML">
-            <select name="provider" required
-                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="google">Google</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="zhipu">智谱 (GLM)</option>
-                <option value="kimi">Kimi (Moonshot)</option>
-            </select>
-            <input name="key" type="password" placeholder="sk-..." required
-                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-            <button class="btn-secondary" type="submit">{{ strings.add_key }}</button>
-        </form>
-        {% endif %}
-    </details>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.model }}</span>
+            <div class="row-control">
+                <input name="model" placeholder="e.g. gpt-4o" required>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.api_keys }}</span>
+            <div class="row-control">
+                <select name="api_key_id" required>
+                    {% for key in api_keys %}
+                    <option value="{{ key.id }}">{{ key.provider }} — ••••••••</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="row-control" style="margin-left: auto;">
+                <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="settings-row">
+        <span style="font-size: 0.78rem; color: #f59e0b;">{% if locale == 'zh' %}尚未配置 API 密钥，请先添加：{% else %}No API keys configured yet. Add one below:{% endif %}</span>
+    </div>
+    <form hx-post="/fragments/quick-add-key"
+          hx-target="#llm-configs-container"
+          hx-swap="innerHTML" style="display: contents;">
+        <div class="settings-row">
+            <span class="row-label">{{ strings.provider }}</span>
+            <div class="row-control">
+                <select name="provider" required>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="zhipu">智谱 (GLM)</option>
+                    <option value="kimi">Kimi (Moonshot)</option>
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.key }}</span>
+            <div class="row-control">
+                <input name="key" type="password" placeholder="sk-..." required>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="row-control" style="margin-left: auto;">
+                <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.add_key }}</button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
 </div>
 
 <script>

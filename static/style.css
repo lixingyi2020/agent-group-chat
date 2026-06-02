@@ -651,106 +651,236 @@ body {
   margin: 1em 0;
 }
 
-/* ── Settings Page ───────────────────────────────────────────────────────── */
+/* ── Chrome-Style Settings Layout ──────────────────────────────────────────── */
 
-.settings-page {
-  padding: var(--space-xl);
-  max-width: 680px;
-  overflow-y: auto;
+.settings-layout {
+  display: flex;
   height: 100%;
+  overflow: hidden;
 }
 
-.settings-page h2 {
+/* Left sidebar nav */
+.settings-nav {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg-base);
+  border-right: 1px solid var(--border-base);
+  padding: var(--space-xl) 0;
+  overflow-y: auto;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-primary);
-  margin-bottom: var(--space-xl);
 }
 
-.settings-page h3 {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+.settings-nav-header {
+  padding: 0 var(--space-lg) var(--space-md);
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
-  margin-bottom: var(--space-md);
-  margin-top: var(--space-xl);
 }
 
-.settings-page input,
-.settings-page select {
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 10px var(--space-lg);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.settings-nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.settings-nav-item.active {
+  color: var(--accent);
+  background: var(--bg-raised);
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+
+.settings-nav-icon {
+  font-size: 1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Right content area */
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl) 48px;
+  background: var(--bg-deep);
+}
+
+/* Search bar */
+.settings-search {
+  width: 100%;
+  max-width: 640px;
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 8px var(--space-md);
+  border-radius: var(--radius-md);
+  padding: 10px var(--space-lg);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   outline: none;
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+  margin-bottom: var(--space-xl);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
-.settings-page input:focus,
-.settings-page select:focus {
+.settings-search:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-.settings-page .key-card {
+.settings-search::placeholder {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+/* Section — each category in content area */
+.settings-section {
+  margin-bottom: var(--space-xl);
+  scroll-margin-top: var(--space-xl);
+}
+
+.settings-section h2 {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.settings-section > .section-desc {
+  font-family: var(--font-system);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+/* Card — rounded container for a group of settings */
+.settings-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-base);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md);
-  margin-bottom: var(--space-sm);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  overflow: hidden;
+}
+
+.settings-card-header {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* Row — horizontal label + control line inside a card */
+.settings-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  transition: border-color var(--duration-fast) var(--ease-out);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-lg);
+  font-size: 0.82rem;
 }
 
-.settings-page .key-card:hover { border-color: var(--border-strong); }
+.settings-row:last-child {
+  border-bottom: none;
+}
 
-/* ── LLM Config Cards ────────────────────────────────────────────────────── */
+.settings-row .row-label {
+  font-family: var(--font-system);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
 
-.llm-config-card {
-  background: var(--bg-surface);
+.settings-row .row-label .row-desc {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.settings-row .row-control {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Form elements inside rows — compact */
+.settings-row input,
+.settings-row select {
+  background: var(--bg-raised);
   border: 1px solid var(--border-base);
   border-radius: var(--radius-sm);
-  padding: var(--space-md);
-  margin-bottom: var(--space-sm);
-  transition: border-color var(--duration-fast) var(--ease-out);
-}
-
-.llm-config-card:hover { border-color: var(--border-strong); }
-
-.llm-config-card strong {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 6px 10px;
   color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  outline: none;
+  transition: border-color var(--duration-fast);
 }
 
-/* ── Back Link ───────────────────────────────────────────────────────────── */
+.settings-row input:focus,
+.settings-row select:focus {
+  border-color: var(--accent);
+}
 
-.back-link {
+/* Add button row */
+.settings-add-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.settings-add-row select,
+.settings-add-row input {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  outline: none;
+}
+
+.settings-add-row input[type="password"] {
+  width: 200px;
+}
+
+/* Back link in content header */
+.settings-back {
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 0.68rem;
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  transition: color var(--duration-fast) var(--ease-out);
+  transition: color var(--duration-fast);
+  display: inline-block;
+  margin-bottom: var(--space-md);
 }
 
-.back-link:hover { color: var(--accent); }
+.settings-back:hover { color: var(--accent); }
+
 
 /* ── Title Edit Form ─────────────────────────────────────────────────────── */
 
