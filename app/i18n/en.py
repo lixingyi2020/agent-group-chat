@@ -34,4 +34,12 @@ STRINGS = {
     "name": "Name",
     "key": "Key",
     "language_switched": "Language switched",
+    "agents": "AI Agents",
+    "add_agent": "Add Agent",
+    "style_preset": "Style",
+    "style_brief": "Brief",
+    "style_rigorous": "Rigorous",
+    "style_witty": "Witty",
+    "style_custom": "Custom",
+    "base_llm": "Base LLM",
 }

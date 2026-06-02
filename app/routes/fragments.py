@@ -1,8 +1,9 @@
 import asyncio
+from html import escape
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, Response
 from app.db import queries
-from app.db.models import LLMConfig, ApiKey
+from app.db.models import LLMConfig, ApiKey, Agent
 from app.i18n import get_locale, get_strings
 from app.templates import templates
 from app.orchestrator import orchestrate_llm_responses, should_respond, extract_mentions
@@ -135,7 +136,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     # Build HTML: user message + placeholders for each responding LLM
     # Placeholder IDs are unique per message to prevent cross-message merging
     html_parts = [f'<div class="message user" id="msg-{user_msg.id}">'
-                  f'<div class="message-body"><div class="message-bubble">{user_msg.content}</div>'
+                  f'<div class="message-body"><div class="message-bubble">{escape(user_msg.content)}</div>'
                   f'</div></div>']
 
     for config in responding:
@@ -145,7 +146,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             f'<div class="message llm generating" id="{placeholder_id}">'
             f'<div class="message-avatar {avatar_class}">{config.name[0]}</div>'
             f'<div class="message-body">'
-            f'<div class="message-sender">{config.name}</div>'
+            f'<div class="message-sender">{escape(config.name)}</div>'
             f'<div class="message-bubble">generating...</div>'
             f'</div></div>'
         )
@@ -176,7 +177,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
                     el.classList.remove("generating");
                     const bubble = el.querySelector(".message-bubble");
                     if (bubble && data.content) {{
-                        bubble.innerHTML = marked.parse(data.content);
+                        bubble.innerHTML = DOMPurify.sanitize(marked.parse(data.content));
                         bubble.classList.add("rendered");
                     }}
                 }}
@@ -319,6 +320,88 @@ async def fragment_update_llm_config(
 @router.delete("/fragments/llm-configs/{config_id}", response_class=HTMLResponse)
 async def fragment_delete_llm_config(config_id: int):
     await queries.delete_llm_config(config_id)
+    return Response(status_code=200)
+
+
+# --- Agent routes ---
+
+@router.get("/fragments/agents", response_class=HTMLResponse)
+async def fragment_agents(request: Request):
+    locale = get_locale(request)
+    strings = get_strings(locale)
+    agents = await queries.list_agents()
+    llm_configs = await queries.list_llm_configs()
+    llm_map = {c.id: c for c in llm_configs}
+    return templates.TemplateResponse(
+        request,
+        "fragments/agents.html",
+        {"request": request, "locale": locale, "strings": strings,
+         "agents": agents, "llm_configs": llm_configs, "llm_map": llm_map},
+    )
+
+
+@router.post("/fragments/agents", response_class=HTMLResponse)
+async def fragment_create_agent(
+    request: Request,
+    name: str = Form(...),
+    llm_config_id: int = Form(...),
+    system_prompt: str = Form(""),
+    style_preset: str = Form("custom"),
+    participation_mode: str = Form("mention_only"),
+):
+    agent = Agent(
+        name=name, llm_config_id=llm_config_id,
+        system_prompt=system_prompt, style_preset=style_preset,
+        participation_mode=participation_mode,
+    )
+    await queries.create_agent(agent)
+    locale = get_locale(request)
+    strings = get_strings(locale)
+    agents = await queries.list_agents()
+    llm_configs = await queries.list_llm_configs()
+    llm_map = {c.id: c for c in llm_configs}
+    return templates.TemplateResponse(
+        request,
+        "fragments/agents.html",
+        {"request": request, "locale": locale, "strings": strings,
+         "agents": agents, "llm_configs": llm_configs, "llm_map": llm_map},
+    )
+
+
+@router.put("/fragments/agents/{agent_id}", response_class=HTMLResponse)
+async def fragment_update_agent(
+    request: Request,
+    agent_id: int,
+    name: str = Form(...),
+    llm_config_id: int = Form(...),
+    system_prompt: str = Form(""),
+    style_preset: str = Form("custom"),
+    participation_mode: str = Form(...),
+):
+    agent = await queries.get_agent(agent_id)
+    if agent:
+        agent.name = name
+        agent.llm_config_id = llm_config_id
+        agent.system_prompt = system_prompt
+        agent.style_preset = style_preset
+        agent.participation_mode = participation_mode
+        await queries.update_agent(agent)
+    locale = get_locale(request)
+    strings = get_strings(locale)
+    agents = await queries.list_agents()
+    llm_configs = await queries.list_llm_configs()
+    llm_map = {c.id: c for c in llm_configs}
+    return templates.TemplateResponse(
+        request,
+        "fragments/agents.html",
+        {"request": request, "locale": locale, "strings": strings,
+         "agents": agents, "llm_configs": llm_configs, "llm_map": llm_map},
+    )
+
+
+@router.delete("/fragments/agents/{agent_id}")
+async def fragment_delete_agent(agent_id: int):
+    await queries.delete_agent(agent_id)
     return Response(status_code=200)
 
 

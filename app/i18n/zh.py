@@ -34,4 +34,12 @@ STRINGS = {
     "name": "名称",
     "key": "密钥",
     "language_switched": "语言已切换",
+    "agents": "智能助手",
+    "add_agent": "添加助手",
+    "style_preset": "风格",
+    "style_brief": "简短",
+    "style_rigorous": "严谨",
+    "style_witty": "风趣",
+    "style_custom": "自定义",
+    "base_llm": "基础 LLM",
 }

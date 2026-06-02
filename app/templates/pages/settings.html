@@ -36,6 +36,9 @@
     <h3>{{ strings.llm_configs }}</h3>
     <div id="llm-configs-container" hx-get="/fragments/llm-configs" hx-trigger="load"></div>
 
+    <h3>{{ strings.agents }}</h3>
+    <div id="agents-container" hx-get="/fragments/agents" hx-trigger="load"></div>
+
     <div style="margin-top: 32px;">
         <h3>{{ strings.language }}</h3>
         <select name="lang" hx-post="/fragments/settings/language" hx-swap="none">
