@@ -5,6 +5,7 @@ python -m PyInstaller ^
   --onedir ^
   --name "agent-chat" ^
   --add-data "app;app" ^
+  --add-data "static;static" ^
   --hidden-import fastapi ^
   --hidden-import starlette ^
   --hidden-import pydantic ^
@@ -46,6 +47,7 @@ python -m PyInstaller ^
   --hidden-import app.routes.stream ^
   --hidden-import app.routes.settings ^
   --collect-all cryptography ^
+  --noconsole ^
   desktop/main.py
 
 if %ERRORLEVEL% EQU 0 (
