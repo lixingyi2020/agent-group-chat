@@ -28,19 +28,20 @@ async def conversation_page(conversation_id: int, request: Request):
         return templates.TemplateResponse(request, "pages/index.html", ctx, status_code=404)
 
     messages = await queries.get_messages(conversation_id)
-    configs = await queries.list_llm_configs()
-    config_map = {c.id: c.name for c in configs}
+    agents = await queries.list_agents()
+    agent_map = {a.id: a.name for a in agents}
     enriched = []
     for msg in messages:
         enriched.append({
             "id": msg.id, "conversation_id": msg.conversation_id,
             "role": msg.role, "llm_config_id": msg.llm_config_id,
+            "agent_id": msg.agent_id,
             "content": msg.content, "created_at": msg.created_at,
-            "llm_name": config_map.get(msg.llm_config_id, "") if msg.llm_config_id else "",
+            "llm_name": agent_map.get(msg.agent_id, "") if msg.agent_id else "",
         })
 
     ctx = _make_context(request, conversations=conversations, conversation=conversation,
-                        messages=enriched, llm_count=len(configs), llm_configs=configs, active_id=conversation_id)
+                        messages=enriched, llm_count=len(agents), agents=agents, active_id=conversation_id)
     return templates.TemplateResponse(request, "pages/index.html", ctx)
 
 

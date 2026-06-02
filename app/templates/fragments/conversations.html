@@ -40,6 +40,9 @@
             hx-swap="outerHTML">
         {{ strings.new_chat }}
     </button>
+    <a href="/settings" class="btn-secondary" style="display: block; text-align: center; text-decoration: none; margin-bottom: 4px;">
+        {{ strings.settings }}
+    </a>
     <div class="lang-switcher">
         <span>{{ strings.language }}</span>
         <select name="lang" hx-post="/fragments/settings/language" hx-swap="none">
