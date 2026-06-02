@@ -22,22 +22,26 @@ async def event_generator(conversation_id: int, request: Request):
     queue = get_or_create_queue(conversation_id)
     print(f"[SSE] Connection opened for conversation {conversation_id}", flush=True)
     quiet_count = 0
-    while True:
-        if await request.is_disconnected():
-            print(f"[SSE] Client disconnected for conversation {conversation_id}", flush=True)
-            break
-        try:
-            event = await asyncio.wait_for(queue.get(), timeout=5.0)
-            quiet_count = 0
-            event_type = event["type"]
-            payload = json.dumps({k: v for k, v in event.items() if k != "type"})
-            print(f"[SSE] Sending {event_type} for llm_config_id={event.get('llm_config_id')}", flush=True)
-            yield f"event: {event_type}\ndata: {payload}\n\n"
-        except asyncio.TimeoutError:
-            quiet_count += 1
-            if quiet_count >= 2:
-                print(f"[SSE] Closing idle connection for conversation {conversation_id}", flush=True)
+    try:
+        while True:
+            if await request.is_disconnected():
+                print(f"[SSE] Client disconnected for conversation {conversation_id}", flush=True)
                 break
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=5.0)
+                quiet_count = 0
+                event_type = event["type"]
+                payload = json.dumps({k: v for k, v in event.items() if k != "type"})
+                print(f"[SSE] Sending {event_type} for llm_config_id={event.get('llm_config_id')}", flush=True)
+                yield f"event: {event_type}\ndata: {payload}\n\n"
+            except asyncio.TimeoutError:
+                quiet_count += 1
+                if quiet_count >= 2:
+                    print(f"[SSE] Closing idle connection for conversation {conversation_id}", flush=True)
+                    break
+    finally:
+        remove_queue(conversation_id)
+        print(f"[SSE] Queue removed for conversation {conversation_id}", flush=True)
 
 
 @router.get("/stream/conversations/{conversation_id}")

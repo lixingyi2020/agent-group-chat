@@ -70,10 +70,8 @@ async def test_add_llm_config(db):
         resp = await client.post(
             "/fragments/llm-configs",
             data={
-                "name": "TestBot",
                 "provider": "openai",
                 "model": "gpt-4o",
-                "participation_mode": "mention_only",
                 "api_key_id": "1",
             },
         )

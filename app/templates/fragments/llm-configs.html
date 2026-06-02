@@ -6,12 +6,10 @@
         <!-- View mode -->
         <div id="llm-config-view-{{ config.id }}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <strong>{{ config.name }}</strong>
-                <span style="font-size: 11px; color: var(--text-muted);">{{ config.provider }} / {{ config.model }}</span>
+                <strong>{{ config.provider }} / {{ config.model }}</strong>
             </div>
             <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
-                {{ strings.participation_mode }}: {{ config.participation_mode }}
-                &nbsp;|&nbsp; {{ strings.max_response_chars }}: {{ config.max_response_chars }}
+                {{ strings.max_response_chars }}: {{ config.max_response_chars }}
             </div>
             <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
                 {% if config.is_title_generator %}★ Default for Conversation Title Generation{% endif %}
@@ -31,19 +29,9 @@
                   hx-put="/fragments/llm-configs/{{ config.id }}"
                   hx-target="#llm-config-{{ config.id }}"
                   hx-swap="outerHTML">
-                <input name="name" value="{{ config.name }}" required
-                       style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                              border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
                 <input name="model" value="{{ config.model }}" required
                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
                               border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
-                <select name="participation_mode"
-                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
-                    <option value="mention_only" {% if config.participation_mode == 'mention_only' %}selected{% endif %}>{{ strings.mention_only }}</option>
-                    <option value="always" {% if config.participation_mode == 'always' %}selected{% endif %}>{{ strings.always }}</option>
-                    <option value="probabilistic" {% if config.participation_mode == 'probabilistic' %}selected{% endif %}>{{ strings.probabilistic }}</option>
-                </select>
                 <select name="api_key_id"
                         style="background: var(--bg-primary); border: 1px solid var(--border-color);
                                border-radius: 6px; padding: 6px 10px; color: var(--text-primary); font-size: 13px;">
@@ -75,9 +63,6 @@
         <form style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"
               hx-post="/fragments/llm-configs"
               hx-target="#llm-configs-container">
-            <input name="name" placeholder="{{ strings.name }}" required
-                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                          border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
             <select name="provider" required
                     style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
                            border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
@@ -91,13 +76,6 @@
             <input name="model" placeholder="{{ strings.model }} (e.g. gpt-4o)" required
                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-            <select name="participation_mode" required
-                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
-                           border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">
-                <option value="mention_only">{{ strings.mention_only }}</option>
-                <option value="always">{{ strings.always }}</option>
-                <option value="probabilistic">{{ strings.probabilistic }}</option>
-            </select>
             <select name="api_key_id" required
                     style="background: var(--bg-tertiary); border: 1px solid var(--border-color);
                            border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 13px;">

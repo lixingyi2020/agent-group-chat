@@ -24,13 +24,13 @@
             <div class="llm-count-menu" id="llm-count-menu" style="display: none; position: absolute; top: 100%; right: 0;
                      background: var(--bg-tertiary); border: 1px solid var(--border-color);
                      border-radius: 6px; padding: 6px 0; min-width: 180px; z-index: 100; margin-top: 4px;">
-                {% for c in llm_configs %}
+                {% for agent in agents %}
                 <div style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 8px;">
-                    <span class="message-avatar avatar-{{ c.id % 8 }}" style="width: 20px; height: 20px; font-size: 10px;">
-                        {{ c.name[0] }}
+                    <span class="message-avatar avatar-{{ agent.id % 8 }}" style="width: 20px; height: 20px; font-size: 10px;">
+                        {{ agent.name[0] }}
                     </span>
-                    <span style="color: var(--text-primary);">{{ c.name }}</span>
-                    <span style="color: var(--text-muted); font-size: 10px; margin-left: auto;">{{ c.provider }}</span>
+                    <span style="color: var(--text-primary);">{{ agent.name }}</span>
+                    <span style="color: var(--text-muted); font-size: 10px; margin-left: auto;">{{ agent.style_preset }}</span>
                 </div>
                 {% endfor %}
             </div>
@@ -131,7 +131,7 @@ if (window.__sseConnection) { window.__sseConnection.close(); }
 })();
 
 // #3: @mention autocomplete
-const LLM_NAMES = {{ llm_configs | map(attribute='name') | list | tojson }};
+const LLM_NAMES = {{ agents | map(attribute='name') | list | tojson }};
 LLM_NAMES.unshift("{{ 'Everyone' if locale == 'en' else '所有AI' }}");  // @Everyone triggers all LLMs
 
 function handleMentionInput(input) {
@@ -210,7 +210,7 @@ function insertMention(input, name) {
 
 // Render markdown for all existing LLM messages on page load
 document.querySelectorAll('.message.llm .message-bubble:not(.rendered)').forEach(function(bubble) {
-    bubble.innerHTML = marked.parse(bubble.textContent);
+    bubble.innerHTML = DOMPurify.sanitize(marked.parse(bubble.textContent));
     bubble.classList.add('rendered');
 });
 </script>

@@ -19,7 +19,7 @@ async def _auto_title(conversation_id: int, first_message: str, config):
         from app.providers import get_provider
         from app.providers.base import LLMRequest
 
-        print(f"[AutoTitle] Starting for conv {conversation_id} with {config.name} (key_id={config.api_key_id})", flush=True)
+        print(f"[AutoTitle] Starting for conv {conversation_id} with {config.provider}/{config.model} (key_id={config.api_key_id})", flush=True)
 
         key_record = await queries.get_api_key(config.api_key_id)
         if not key_record:
@@ -86,8 +86,10 @@ async def fragment_messages(conversation_id: int, request: Request):
     conversation = await queries.get_conversation(conversation_id)
     messages = await queries.get_messages(conversation_id)
     configs = await queries.list_llm_configs()
+    agents = await queries.list_agents()
 
     config_map = {c.id: c.name for c in configs}
+    agent_map = {a.id: a.name for a in agents}
     enriched = []
     for msg in messages:
         enriched.append({
@@ -95,9 +97,10 @@ async def fragment_messages(conversation_id: int, request: Request):
             "conversation_id": msg.conversation_id,
             "role": msg.role,
             "llm_config_id": msg.llm_config_id,
+            "agent_id": msg.agent_id,
             "content": msg.content,
             "created_at": msg.created_at,
-            "llm_name": config_map.get(msg.llm_config_id, "") if msg.llm_config_id else "",
+            "llm_name": agent_map.get(msg.agent_id, "") if msg.agent_id else config_map.get(msg.llm_config_id, "") if msg.llm_config_id else "",
         })
 
     return templates.TemplateResponse(
@@ -105,13 +108,14 @@ async def fragment_messages(conversation_id: int, request: Request):
         "fragments/messages.html",
         {"request": request, "locale": locale, "strings": strings,
          "conversation": conversation, "messages": enriched,
-         "llm_count": len(configs), "llm_configs": configs},
+         "llm_count": len(agents), "agents": agents},
     )
 
 
 @router.post("/fragments/conversations/{conversation_id}/messages", response_class=HTMLResponse)
 async def fragment_post_message(conversation_id: int, content: str = Form(...)):
     configs = await queries.list_llm_configs()
+    agents_list = await queries.list_agents()
 
     # Save user message
     user_msg = await queries.create_message(conversation_id, "user", content)
@@ -126,27 +130,29 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
         # Use the LLM flagged as title generator, or fall back to first available
         title_llm = next((c for c in configs if c.is_title_generator), None)
         if not title_llm:
-            title_llm = configs[0]
-        print(f"[AutoTitle] Triggering for conversation {conversation_id} with LLM {title_llm.name}", flush=True)
-        asyncio.create_task(_auto_title(conversation_id, content, title_llm))
+            title_llm = configs[0] if configs else None
+        if title_llm:
+            title_agent = next((a for a in agents_list if a.llm_config_id == title_llm.id), None)
+            if title_agent:
+                asyncio.create_task(_auto_title(conversation_id, content, title_llm))
 
-    # Determine which LLMs will respond
-    responding = [c for c in configs if should_respond(c, content)]
+    # Determine which agents will respond
+    responding = [a for a in agents_list if should_respond(a, content)]
 
-    # Build HTML: user message + placeholders for each responding LLM
+    # Build HTML: user message + placeholders for each responding agent
     # Placeholder IDs are unique per message to prevent cross-message merging
     html_parts = [f'<div class="message user" id="msg-{user_msg.id}">'
                   f'<div class="message-body"><div class="message-bubble">{escape(user_msg.content)}</div>'
                   f'</div></div>']
 
-    for config in responding:
-        placeholder_id = f"placeholder-{config.id}-{user_msg.id}"
-        avatar_class = f"avatar-{config.id % 8}"
+    for agent in responding:
+        placeholder_id = f"placeholder-{agent.id}-{user_msg.id}"
+        avatar_class = f"avatar-{agent.id % 8}"
         html_parts.append(
             f'<div class="message llm generating" id="{placeholder_id}">'
-            f'<div class="message-avatar {avatar_class}">{config.name[0]}</div>'
+            f'<div class="message-avatar {avatar_class}">{agent.name[0]}</div>'
             f'<div class="message-body">'
-            f'<div class="message-sender">{escape(config.name)}</div>'
+            f'<div class="message-sender">{escape(agent.name)}</div>'
             f'<div class="message-bubble">generating...</div>'
             f'</div></div>'
         )
@@ -161,7 +167,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             window.__sseConnection = es;
             es.addEventListener("token", function(e) {{
                 const data = JSON.parse(e.data);
-                const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
+                const el = document.getElementById("placeholder-" + data.agent_id + "-" + MSG_ID);
                 if (el) {{
                     const bubble = el.querySelector(".message-bubble");
                     if (bubble) {{
@@ -172,7 +178,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             }});
             es.addEventListener("complete", function(e) {{
                 const data = JSON.parse(e.data);
-                const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
+                const el = document.getElementById("placeholder-" + data.agent_id + "-" + MSG_ID);
                 if (el) {{
                     el.classList.remove("generating");
                     const bubble = el.querySelector(".message-bubble");
@@ -184,7 +190,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
             }});
             es.addEventListener("llm-error", function(e) {{
                 const data = JSON.parse(e.data);
-                const el = document.getElementById("placeholder-" + data.llm_config_id + "-" + MSG_ID);
+                const el = document.getElementById("placeholder-" + data.agent_id + "-" + MSG_ID);
                 if (el) {{
                     el.classList.remove("generating");
                     const bubble = el.querySelector(".message-bubble");
@@ -241,15 +247,12 @@ async def fragment_llm_configs(request: Request):
 @router.post("/fragments/llm-configs", response_class=HTMLResponse)
 async def fragment_create_llm_config(
     request: Request,
-    name: str = Form(...),
     provider: str = Form(...),
     model: str = Form(...),
-    participation_mode: str = Form("mention_only"),
     api_key_id: int = Form(...),
 ):
     config = LLMConfig(
-        name=name, provider=provider, model=model,
-        participation_mode=participation_mode, api_key_id=api_key_id,
+        provider=provider, model=model, api_key_id=api_key_id,
     )
     await queries.create_llm_config(config)
     locale = get_locale(request)
@@ -283,9 +286,7 @@ async def fragment_quick_add_key(request: Request, provider: str = Form(...), ke
 async def fragment_update_llm_config(
     request: Request,
     config_id: int,
-    name: str = Form(...),
     model: str = Form(...),
-    participation_mode: str = Form(...),
     api_key_id: int = Form(...),
     is_title_generator: str = Form("false"),
 ):
@@ -300,9 +301,7 @@ async def fragment_update_llm_config(
 
     config = await queries.get_llm_config(config_id)
     if config:
-        config.name = name
         config.model = model
-        config.participation_mode = participation_mode
         config.api_key_id = api_key_id
         config.is_title_generator = is_title
         await queries.update_llm_config(config)

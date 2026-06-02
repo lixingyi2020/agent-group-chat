@@ -41,7 +41,10 @@ class AnthropicProvider(BaseProvider):
             raise ProviderError(f"Unexpected status: {resp.status_code}", status_code=resp.status_code, retryable=False)
 
         data = resp.json()
-        content = data["content"][0]["text"]
+        blocks = data.get("content", [])
+        if not blocks:
+            raise ProviderError("API returned empty content (content filtered)", status_code=422, retryable=False)
+        content = blocks[0].get("text") or ""
         return LLMResponse(content=content, model=request.model)
 
     async def generate_stream(self, request: LLMRequest) -> AsyncIterator[str]:

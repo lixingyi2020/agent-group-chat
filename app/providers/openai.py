@@ -44,7 +44,10 @@ class OpenAIProvider(BaseProvider):
             raise ProviderError(f"HTTP {resp.status_code}: {body}", status_code=resp.status_code, retryable=False)
 
         data = resp.json()
-        content = data["choices"][0]["message"]["content"]
+        choices = data.get("choices", [])
+        if not choices:
+            raise ProviderError("API returned empty choices (content filtered)", status_code=422, retryable=False)
+        content = choices[0].get("message", {}).get("content") or ""
         return LLMResponse(content=content, model=request.model)
 
     async def generate_stream(self, request: LLMRequest) -> AsyncIterator[str]:

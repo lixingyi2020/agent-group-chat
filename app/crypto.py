@@ -1,7 +1,11 @@
 import os
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 _KEY_PATH = ".fernet_key"
+
+
+class KeyDecryptError(Exception):
+    """Raised when decryption fails, likely due to key rotation or corruption."""
 
 
 def _get_or_create_key() -> bytes:
@@ -20,5 +24,12 @@ def encrypt(plaintext: str) -> str:
 
 
 def decrypt(encrypted: str) -> str:
-    f = Fernet(_get_or_create_key())
-    return f.decrypt(encrypted.encode()).decode()
+    try:
+        f = Fernet(_get_or_create_key())
+        return f.decrypt(encrypted.encode()).decode()
+    except InvalidToken as e:
+        raise KeyDecryptError(
+            "Failed to decrypt API key. "
+            "The .fernet_key file may have been regenerated, rotated, or corrupted. "
+            "Re-add your API keys in Settings."
+        ) from e

@@ -44,7 +44,13 @@ class GoogleProvider(BaseProvider):
             raise ProviderError(f"Unexpected status: {resp.status_code}", status_code=resp.status_code, retryable=False)
 
         data = resp.json()
-        content = data["candidates"][0]["content"]["parts"][0]["text"]
+        candidates = data.get("candidates", [])
+        if not candidates:
+            raise ProviderError("API returned empty candidates (content filtered)", status_code=422, retryable=False)
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            raise ProviderError("API returned empty parts (content filtered)", status_code=422, retryable=False)
+        content = parts[0].get("text") or ""
         return LLMResponse(content=content, model=request.model)
 
     async def generate_stream(self, request: LLMRequest) -> AsyncIterator[str]:

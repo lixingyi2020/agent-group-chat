@@ -105,6 +105,7 @@ async def _run_llm_generation(
         await event_queue.put({
             "type": "llm-error",
             "llm_config_id": agent.llm_config_id,
+            "agent_id": agent.id,
             "error": f"LLM config not found for agent {agent.name}",
             "retryable": False,
         })
@@ -143,6 +144,7 @@ async def _run_llm_generation(
             await event_queue.put({
                 "type": "token",
                 "llm_config_id": config.id,
+                "agent_id": agent.id,
                 "token": token,
             })
         print(f"[LLM] {agent.name}: stream complete, {len(full_content)} chars. Pushing to queue...", flush=True)
@@ -152,6 +154,7 @@ async def _run_llm_generation(
             await event_queue.put({
                 "type": "llm-error",
                 "llm_config_id": config.id,
+                "agent_id": agent.id,
                 "error": "Empty response (possibly all tokens consumed by reasoning)",
                 "retryable": False,
             })
@@ -164,6 +167,7 @@ async def _run_llm_generation(
         await event_queue.put({
             "type": "complete",
             "llm_config_id": config.id,
+            "agent_id": agent.id,
             "message_id": message.id,
             "content": full_content,
         })
@@ -188,13 +192,14 @@ async def _run_llm_generation(
             try:
                 response = await with_retries(provider.generate, request)
                 full_content = response.content
-                await event_queue.put({"type": "token", "llm_config_id": config.id, "token": full_content})
+                await event_queue.put({"type": "token", "llm_config_id": config.id, "agent_id": agent.id, "token": full_content})
                 message = await queries.create_message(
                     conversation_id, "llm", full_content, config.id, agent_id=agent.id
                 )
                 await event_queue.put({
                     "type": "complete",
                     "llm_config_id": config.id,
+                    "agent_id": agent.id,
                     "message_id": message.id,
                     "content": full_content,
                 })
@@ -204,6 +209,7 @@ async def _run_llm_generation(
         await event_queue.put({
             "type": "llm-error",
             "llm_config_id": config.id,
+            "agent_id": agent.id,
             "error": str(e),
             "retryable": e.retryable,
         })
@@ -213,6 +219,7 @@ async def _run_llm_generation(
         await event_queue.put({
             "type": "llm-error",
             "llm_config_id": config.id,
+            "agent_id": agent.id,
             "error": str(e),
             "retryable": False,
         })
