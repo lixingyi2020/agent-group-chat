@@ -98,7 +98,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    _log_path = os.path.join(_project_root, "agent-chat.log")
+    if getattr(sys, 'frozen', False):
+        _log_dir = os.path.dirname(sys.executable)
+    else:
+        _log_dir = _project_root
+    _log_path = os.path.join(_log_dir, "agent-chat.log")
     try:
         main()
     except Exception as e:
