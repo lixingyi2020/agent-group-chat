@@ -14,7 +14,10 @@ def test_agent_create_with_fields():
               style_preset="brief", participation_mode="always", probability=1.0)
     assert a.name == "xiaozhushou"
     assert a.llm_config_id == 1
+    assert a.system_prompt == "Be helpful"
     assert a.style_preset == "brief"
+    assert a.participation_mode == "always"
+    assert a.probability == 1.0
 
 
 def test_llm_config_no_longer_has_name():
