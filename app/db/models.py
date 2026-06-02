@@ -17,6 +17,7 @@ class Message:
     conversation_id: int = 0
     role: str = "user"  # "user", "llm", "system"
     llm_config_id: Optional[int] = None
+    agent_id: Optional[int] = None
     content: str = ""
     created_at: str = ""
 
@@ -24,15 +25,23 @@ class Message:
 @dataclass
 class LLMConfig:
     id: Optional[int] = None
-    name: str = ""
     provider: str = "openai"
     model: str = ""
     api_key_id: Optional[int] = None
-    participation_mode: str = "mention_only"  # "mention_only", "always", "probabilistic"
-    probability: float = 0.3
     max_response_chars: int = 200
-    system_prompt: Optional[str] = None
     is_title_generator: bool = False
+    created_at: str = ""
+
+
+@dataclass
+class Agent:
+    id: Optional[int] = None
+    name: str = ""
+    llm_config_id: int = 0
+    system_prompt: str = ""
+    style_preset: str = "custom"  # "brief", "rigorous", "witty", "custom"
+    participation_mode: str = "mention_only"
+    probability: float = 0.3
     created_at: str = ""
 
 
