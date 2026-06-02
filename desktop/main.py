@@ -46,25 +46,42 @@ def wait_for_server(url: str, timeout: int = 30) -> bool:
 
 
 def main() -> None:
+    log_path = os.path.join(_project_root, "agent-chat.log")
+    def log(msg):
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+
+    log(f"Starting AI Agent Chat...")
+    log(f"Project root: {_project_root}")
+
     port = find_free_port()
+    log(f"Port: {port}")
 
     # Start FastAPI server in daemon thread
     server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
     server_thread.start()
+    log("Server thread started")
 
     url = f"http://127.0.0.1:{port}"
 
     # Create system tray icon
-    tray_icon = create_tray()
-    tray_thread = threading.Thread(target=tray_icon.run, daemon=True)
-    tray_thread.start()
+    try:
+        tray_icon = create_tray()
+        tray_thread = threading.Thread(target=tray_icon.run, daemon=True)
+        tray_thread.start()
+        log("Tray icon created")
+    except Exception as e:
+        log(f"Tray error: {e}")
 
     # Wait for server to be ready before opening WebView
+    log("Waiting for server...")
     if not wait_for_server(url):
-        print(f"ERROR: Server did not start on {url}", file=sys.stderr)
+        log(f"ERROR: Server did not start on {url}")
         sys.exit(1)
+    log("Server is ready")
 
     # Open WebView window
+    log("Creating WebView window...")
     window = webview.create_window(
         "AI Agent Chat",
         url,
@@ -76,8 +93,22 @@ def main() -> None:
     # Close button hides to tray instead of exiting
     window.events.closing += lambda: window.hide()
 
+    log("Starting WebView...")
     webview.start(gui='edgechromium')
 
 
 if __name__ == "__main__":
-    main()
+    _log_path = os.path.join(_project_root, "agent-chat.log")
+    try:
+        main()
+    except Exception as e:
+        with open(_log_path, "w", encoding="utf-8") as f:
+            import traceback
+            f.write(f"FATAL: {e}\n\n")
+            traceback.print_exc(file=f)
+        # Also try a message box
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(0, f"Startup failed:\n\n{e}", "AI Agent Chat", 0x10)
+        except Exception:
+            pass
