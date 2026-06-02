@@ -54,7 +54,7 @@
                 {{ msg.llm_name[0] if msg.llm_name else '?' }}
             </div>
             <div class="message-body">
-                <div class="message-sender">{{ msg.llm_name or 'LLM' }}</div>
+                <div class="message-sender">{{ msg.llm_name or strings.get('agent_label', 'Agent') }}</div>
                 <div class="message-bubble">{{ msg.content }}</div>
             </div>
         </div>

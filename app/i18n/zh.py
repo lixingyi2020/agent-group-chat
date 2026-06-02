@@ -42,4 +42,5 @@ STRINGS = {
     "style_witty": "风趣",
     "style_custom": "自定义",
     "base_llm": "基础 LLM",
+    "agent_label": "助手",
 }

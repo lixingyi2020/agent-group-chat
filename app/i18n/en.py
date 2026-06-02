@@ -42,4 +42,5 @@ STRINGS = {
     "style_witty": "Witty",
     "style_custom": "Custom",
     "base_llm": "Base LLM",
+    "agent_label": "Agent",
 }
