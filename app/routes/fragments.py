@@ -88,7 +88,7 @@ async def fragment_messages(conversation_id: int, request: Request):
     configs = await queries.list_llm_configs()
     agents = await queries.list_agents()
 
-    config_map = {c.id: c.name for c in configs}
+    config_map = {c.id: f"{c.provider}/{c.model}" for c in configs}
     agent_map = {a.id: a.name for a in agents}
     enriched = []
     for msg in messages:
