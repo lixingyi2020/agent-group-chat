@@ -58,6 +58,7 @@ async def test_auto_migration_creates_agents():
             assert agent[1] == "Claude"  # name (index 1)
             assert agent[2] == 1  # llm_config_id (index 2)
             assert agent[3] == "You are helpful"  # system_prompt (index 3)
+            assert agent[4] == "custom"  # style_preset (index 4)
             assert agent[5] == "mention_only"  # participation_mode (index 5)
             assert agent[6] == 0.5  # probability (index 6)
 

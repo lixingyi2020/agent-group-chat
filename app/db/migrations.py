@@ -92,6 +92,6 @@ async def migrate(db_path: str) -> None:
                        VALUES (?, ?, ?, ?, ?, 'custom')""",
                     (name or f"Agent-{config_id}", config_id,
                      system_prompt or "", participation_mode or "mention_only",
-                     probability or 0.3),
+                     probability if probability is not None else 0.3),
                 )
         await db.commit()
