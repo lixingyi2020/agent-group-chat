@@ -1,7 +1,13 @@
+import sys
 import os
 from cryptography.fernet import Fernet, InvalidToken
 
-_KEY_PATH = ".fernet_key"
+def _get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+_KEY_PATH = os.path.join(_get_base_dir(), ".fernet_key")
 
 
 class KeyDecryptError(Exception):
