@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
 
 CREATE TABLE IF NOT EXISTS llm_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
     provider TEXT NOT NULL DEFAULT 'openai',
     model TEXT NOT NULL DEFAULT '',
     api_key_id INTEGER,

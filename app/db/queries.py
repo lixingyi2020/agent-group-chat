@@ -1,6 +1,6 @@
 import aiosqlite
 from typing import Optional
-from app.db.models import Conversation, Message, LLMConfig, ApiKey, Setting
+from app.db.models import Conversation, Message, LLMConfig, Agent, ApiKey, Setting
 
 DB_PATH = "chat.db"
 
@@ -11,15 +11,15 @@ def _row_to_conversation(row: tuple) -> Conversation:
 
 def _row_to_message(row: tuple) -> Message:
     return Message(id=row[0], conversation_id=row[1], role=row[2],
-                   llm_config_id=row[3], content=row[4], created_at=row[5])
+                   llm_config_id=row[3], content=row[4], created_at=row[5],
+                   agent_id=row[6] if len(row) > 6 else None)
 
 
 def _row_to_llm_config(row: tuple) -> LLMConfig:
-    return LLMConfig(id=row[0], name=row[1], provider=row[2], model=row[3],
-                     api_key_id=row[4], participation_mode=row[5], probability=row[6],
-                     max_response_chars=row[7], system_prompt=row[8],
+    return LLMConfig(id=row[0], provider=row[2], model=row[3],
+                     api_key_id=row[4], max_response_chars=row[7],
                      is_title_generator=bool(row[10]) if len(row) > 10 else False,
-                     created_at=row[9] if len(row) <= 10 else row[10])
+                     created_at=row[9])
 
 
 def _row_to_api_key(row: tuple) -> ApiKey:
@@ -76,11 +76,12 @@ async def update_conversation_title(conversation_id: int, title: str) -> None:
 # --- Messages ---
 
 async def create_message(conversation_id: int, role: str, content: str,
-                         llm_config_id: Optional[int] = None) -> Message:
+                         llm_config_id: Optional[int] = None,
+                         agent_id: Optional[int] = None) -> Message:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "INSERT INTO messages (conversation_id, role, content, llm_config_id) VALUES (?, ?, ?, ?)",
-            (conversation_id, role, content, llm_config_id),
+            "INSERT INTO messages (conversation_id, role, content, llm_config_id, agent_id) VALUES (?, ?, ?, ?, ?)",
+            (conversation_id, role, content, llm_config_id, agent_id),
         )
         await db.execute(
             "UPDATE conversations SET updated_at = datetime('now') WHERE id = ?",
@@ -107,12 +108,11 @@ async def get_messages(conversation_id: int) -> list[Message]:
 async def create_llm_config(config: LLMConfig) -> LLMConfig:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            """INSERT INTO llm_configs (name, provider, model, api_key_id,
-               participation_mode, probability, max_response_chars, system_prompt, is_title_generator)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (config.name, config.provider, config.model, config.api_key_id,
-             config.participation_mode, config.probability, config.max_response_chars,
-             config.system_prompt, int(config.is_title_generator)),
+            """INSERT INTO llm_configs (provider, model, api_key_id,
+               max_response_chars, is_title_generator)
+               VALUES (?, ?, ?, ?, ?)""",
+            (config.provider, config.model, config.api_key_id,
+             config.max_response_chars, int(config.is_title_generator)),
         )
         await db.commit()
         row = await db.execute("SELECT * FROM llm_configs WHERE id = ?", (cursor.lastrowid,))
@@ -137,13 +137,11 @@ async def get_llm_config(config_id: int) -> Optional[LLMConfig]:
 async def update_llm_config(config: LLMConfig) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            """UPDATE llm_configs SET name=?, provider=?, model=?, api_key_id=?,
-               participation_mode=?, probability=?, max_response_chars=?, system_prompt=?,
-               is_title_generator=?
+            """UPDATE llm_configs SET provider=?, model=?, api_key_id=?,
+               max_response_chars=?, is_title_generator=?
                WHERE id=?""",
-            (config.name, config.provider, config.model, config.api_key_id,
-             config.participation_mode, config.probability, config.max_response_chars,
-             config.system_prompt, int(config.is_title_generator), config.id),
+            (config.provider, config.model, config.api_key_id,
+             config.max_response_chars, int(config.is_title_generator), config.id),
         )
         await db.commit()
 
@@ -165,6 +163,63 @@ async def get_llm_configs_by_ids(config_ids: list[int]) -> list[LLMConfig]:
         )
         rows = await cursor.fetchall()
         return [_row_to_llm_config(r) for r in rows]
+
+
+# --- Agents ---
+
+def _row_to_agent(row: tuple) -> Agent:
+    return Agent(id=row[0], name=row[1], llm_config_id=row[2],
+                 system_prompt=row[3], style_preset=row[4],
+                 participation_mode=row[5], probability=row[6],
+                 created_at=row[7])
+
+
+async def create_agent(agent: Agent) -> Agent:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            """INSERT INTO agents (name, llm_config_id, system_prompt, style_preset,
+               participation_mode, probability)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (agent.name, agent.llm_config_id, agent.system_prompt,
+             agent.style_preset, agent.participation_mode, agent.probability),
+        )
+        await db.commit()
+        row = await db.execute("SELECT * FROM agents WHERE id = ?", (cursor.lastrowid,))
+        r = await row.fetchone()
+        return _row_to_agent(r)
+
+
+async def list_agents() -> list[Agent]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT * FROM agents ORDER BY created_at ASC")
+        rows = await cursor.fetchall()
+        return [_row_to_agent(r) for r in rows]
+
+
+async def get_agent(agent_id: int) -> Optional[Agent]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT * FROM agents WHERE id = ?", (agent_id,))
+        row = await cursor.fetchone()
+        return _row_to_agent(row) if row else None
+
+
+async def update_agent(agent: Agent) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """UPDATE agents SET name=?, llm_config_id=?, system_prompt=?,
+               style_preset=?, participation_mode=?, probability=?
+               WHERE id=?""",
+            (agent.name, agent.llm_config_id, agent.system_prompt,
+             agent.style_preset, agent.participation_mode, agent.probability,
+             agent.id),
+        )
+        await db.commit()
+
+
+async def delete_agent(agent_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
+        await db.commit()
 
 
 # --- API Keys ---
