@@ -218,6 +218,7 @@ async def update_agent(agent: Agent) -> None:
 
 async def delete_agent(agent_id: int) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("PRAGMA foreign_keys = ON")
         await db.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
         await db.commit()
 

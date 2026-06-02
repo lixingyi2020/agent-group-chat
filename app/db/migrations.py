@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS llm_configs (
     probability REAL NOT NULL DEFAULT 0.3,
     max_response_chars INTEGER NOT NULL DEFAULT 200,
     system_prompt TEXT,
-    is_title_generator INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    is_title_generator INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (api_key_id) REFERENCES api_keys(id) ON DELETE SET NULL
 );
 
