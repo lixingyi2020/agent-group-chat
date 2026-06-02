@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from app.db.models import LLMConfig, ApiKey
+from app.db.models import Agent, LLMConfig, ApiKey
 from app.db import queries
 from app.orchestrator import orchestrate_llm_responses
 from app.routes.stream import get_or_create_queue, remove_queue
@@ -12,9 +12,10 @@ async def test_orchestrate_with_mention_only_config(db):
     await queries.create_message(conv.id, "user", "Hello @claude")
 
     key = await queries.create_api_key(ApiKey(provider="openai", key_encrypted="encrypted"))
-    config = LLMConfig(name="claude", provider="openai", model="gpt-4o",
-                       participation_mode="mention_only", api_key_id=key.id)
-    await queries.create_llm_config(config)
+    config = LLMConfig(provider="openai", model="gpt-4o", api_key_id=key.id)
+    config = await queries.create_llm_config(config)
+    agent = Agent(name="claude", llm_config_id=config.id, participation_mode="mention_only")
+    await queries.create_agent(agent)
 
     queue = get_or_create_queue(conv.id)
 
@@ -31,9 +32,10 @@ async def test_mention_only_skips_without_mention(db):
     await queries.create_message(conv.id, "user", "Just a normal message")
 
     key = await queries.create_api_key(ApiKey(provider="openai", key_encrypted="encrypted"))
-    config = LLMConfig(name="claude", provider="openai", model="gpt-4o",
-                       participation_mode="mention_only", api_key_id=key.id)
-    await queries.create_llm_config(config)
+    config = LLMConfig(provider="openai", model="gpt-4o", api_key_id=key.id)
+    config = await queries.create_llm_config(config)
+    agent = Agent(name="claude", llm_config_id=config.id, participation_mode="mention_only")
+    await queries.create_agent(agent)
 
     queue = get_or_create_queue(conv.id)
 
@@ -50,9 +52,10 @@ async def test_always_mode_triggers(db):
     await queries.create_message(conv.id, "user", "Any message")
 
     key = await queries.create_api_key(ApiKey(provider="openai", key_encrypted="encrypted"))
-    config = LLMConfig(name="claude", provider="openai", model="gpt-4o",
-                       participation_mode="always", api_key_id=key.id)
-    await queries.create_llm_config(config)
+    config = LLMConfig(provider="openai", model="gpt-4o", api_key_id=key.id)
+    config = await queries.create_llm_config(config)
+    agent = Agent(name="claude", llm_config_id=config.id, participation_mode="always")
+    await queries.create_agent(agent)
 
     queue = get_or_create_queue(conv.id)
 
