@@ -15,7 +15,6 @@ python -m PyInstaller ^
   --hidden-import aiosqlite ^
   --hidden-import cryptography.fernet ^
   --collect-all jinja2 ^
-  --noconsole ^
   desktop/main.py
 
 if %ERRORLEVEL% EQU 0 (
