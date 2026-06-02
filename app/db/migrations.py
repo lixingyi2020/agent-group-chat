@@ -76,6 +76,12 @@ async def migrate(db_path: str) -> None:
         except Exception:
             pass
 
+        # Add avatar_index column to agents
+        try:
+            await db.execute("ALTER TABLE agents ADD COLUMN avatar_index INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass
+
         # Auto-migrate: create agents from existing LLM configs (only if agents table is empty)
         cursor = await db.execute("SELECT COUNT(*) FROM agents")
         agent_count = (await cursor.fetchone())[0]

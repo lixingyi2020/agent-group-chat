@@ -26,7 +26,7 @@
                      border-radius: 6px; padding: 6px 0; min-width: 180px; z-index: 100; margin-top: 4px;">
                 {% for agent in agents %}
                 <div style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 8px;">
-                    <span class="message-avatar avatar-{{ agent.id % 8 }}" style="width: 20px; height: 20px; font-size: 10px;">
+                    <span class="message-avatar avatar-{{ agent.avatar_index }}" style="width: 20px; height: 20px; font-size: 10px;">
                         {{ agent.name[0] }}
                     </span>
                     <span style="color: var(--text-primary);">{{ agent.name }}</span>
@@ -49,7 +49,7 @@
         </div>
         {% elif msg.role == 'llm' %}
         <div class="message llm" id="msg-{{ msg.id }}">
-            {% set avatar_idx = (msg.llm_config_id or 0) % 8 %}
+            {% set avatar_idx = (msg.avatar_idx if msg.avatar_idx is defined else (msg.llm_config_id or 0) % 8) %}
             <div class="message-avatar avatar-{{ avatar_idx }}">
                 {{ msg.llm_name[0] if msg.llm_name else '?' }}
             </div>

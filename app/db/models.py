@@ -42,6 +42,7 @@ class Agent:
     style_preset: str = "custom"  # "brief", "rigorous", "witty", "custom"
     participation_mode: str = "mention_only"
     probability: float = 0.3
+    avatar_index: int = 0  # 0-7, which preset gradient to use
     created_at: str = ""
 
 

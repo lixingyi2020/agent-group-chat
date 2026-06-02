@@ -3,7 +3,10 @@
     <!-- View mode -->
     <div id="agent-view-{{ agent.id }}">
         <div class="settings-row">
-            <span class="row-label">{{ agent.name }}</span>
+            <span class="row-label" style="display: flex; align-items: center; gap: 8px;">
+                <span class="message-avatar avatar-{{ agent.avatar_index }}" style="width: 24px; height: 24px; font-size: 10px; display: inline-flex;">{{ agent.name[0] }}</span>
+                {{ agent.name }}
+            </span>
             <div class="row-control">
                 <button class="btn-secondary" style="width: auto;"
                         onclick="toggleEditAgent({{ agent.id }})">✎ Edit</button>
@@ -38,6 +41,17 @@
                 <div class="row-control">
                     <input name="name" value="{{ agent.name }}" required>
                 </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{% if locale == 'zh' %}头像颜色{% else %}Avatar{% endif %}</span>
+                <div class="row-control avatar-picker" data-agent="{{ agent.id }}">
+                    {% for i in range(8) %}
+                    <span class="avatar-swatch avatar-{{ i }}" data-index="{{ i }}"
+                          style="width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; font-weight: 600; opacity: {{ '1' if agent.avatar_index == i else '0.4' }}; transition: opacity 0.15s;"
+                          onclick="selectAvatar({{ agent.id }}, {{ i }})">{{ agent.name[0] }}</span>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="avatar_index" value="{{ agent.avatar_index }}" id="avatar-input-{{ agent.id }}">
             </div>
             <div class="settings-row">
                 <span class="row-label">{{ strings.base_llm }}</span>
@@ -96,12 +110,23 @@
     <div class="settings-card-header">{{ strings.add_agent }}</div>
     {% if llm_configs %}
     <form hx-post="/fragments/agents"
-          hx-target="#agents-container" style="display: contents;">
+          hx-target="#agents-container">
         <div class="settings-row">
             <span class="row-label">{{ strings.name }}</span>
             <div class="row-control">
                 <input name="name" placeholder="{{ strings.name }}" required>
             </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{% if locale == 'zh' %}头像颜色{% else %}Avatar{% endif %}</span>
+            <div class="row-control avatar-picker" data-agent="new">
+                {% for i in range(8) %}
+                <span class="avatar-swatch avatar-{{ i }}" data-index="{{ i }}"
+                      style="width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; font-weight: 600; opacity: 0.4; transition: opacity 0.15s;"
+                      onclick="selectNewAvatar({{ i }})">{{ strings.agents[0] if strings.agents else 'A' }}</span>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="avatar_index" value="0" id="avatar-input-new">
         </div>
         <div class="settings-row">
             <span class="row-label">{{ strings.base_llm }}</span>
@@ -176,6 +201,27 @@ function updateNewStylePrompt(select) {
     var key = select.value + '_prompt';
     if (STYLE_PROMPTS[key] !== undefined) {
         textarea.value = STYLE_PROMPTS[key];
+    }
+}
+
+function selectAvatar(agentId, index) {
+    var input = document.getElementById('avatar-input-' + agentId);
+    if (input) input.value = index;
+    var picker = document.querySelector('.avatar-picker[data-agent="' + agentId + '"]');
+    if (picker) {
+        picker.querySelectorAll('.avatar-swatch').forEach(function(s, i) {
+            s.style.opacity = i === index ? '1' : '0.4';
+        });
+    }
+}
+function selectNewAvatar(index) {
+    var input = document.getElementById('avatar-input-new');
+    if (input) input.value = index;
+    var picker = document.querySelector('.avatar-picker[data-agent="new"]');
+    if (picker) {
+        picker.querySelectorAll('.avatar-swatch').forEach(function(s, i) {
+            s.style.opacity = i === index ? '1' : '0.4';
+        });
     }
 }
 

@@ -90,6 +90,7 @@ async def fragment_messages(conversation_id: int, request: Request):
 
     config_map = {c.id: f"{c.provider}/{c.model}" for c in configs}
     agent_map = {a.id: a.name for a in agents}
+    avatar_map = {a.id: a.avatar_index for a in agents}
     enriched = []
     for msg in messages:
         enriched.append({
@@ -101,6 +102,7 @@ async def fragment_messages(conversation_id: int, request: Request):
             "content": msg.content,
             "created_at": msg.created_at,
             "llm_name": agent_map.get(msg.agent_id, "") if msg.agent_id else config_map.get(msg.llm_config_id, "") if msg.llm_config_id else "",
+            "avatar_idx": avatar_map.get(msg.agent_id, msg.llm_config_id or 0) if msg.agent_id else (msg.llm_config_id or 0) % 8,
         })
 
     return templates.TemplateResponse(
@@ -147,7 +149,7 @@ async def fragment_post_message(conversation_id: int, content: str = Form(...)):
 
     for agent in responding:
         placeholder_id = f"placeholder-{agent.id}-{user_msg.id}"
-        avatar_class = f"avatar-{agent.id % 8}"
+        avatar_class = f"avatar-{agent.avatar_index}"
         html_parts.append(
             f'<div class="message llm generating" id="{placeholder_id}">'
             f'<div class="message-avatar {avatar_class}">{agent.name[0]}</div>'
@@ -347,11 +349,12 @@ async def fragment_create_agent(
     system_prompt: str = Form(""),
     style_preset: str = Form("custom"),
     participation_mode: str = Form("mention_only"),
+    avatar_index: int = Form(0),
 ):
     agent = Agent(
         name=name, llm_config_id=llm_config_id,
         system_prompt=system_prompt, style_preset=style_preset,
-        participation_mode=participation_mode,
+        participation_mode=participation_mode, avatar_index=avatar_index,
     )
     await queries.create_agent(agent)
     locale = get_locale(request)
@@ -376,6 +379,7 @@ async def fragment_update_agent(
     system_prompt: str = Form(""),
     style_preset: str = Form("custom"),
     participation_mode: str = Form(...),
+    avatar_index: int = Form(0),
 ):
     agent = await queries.get_agent(agent_id)
     if agent:
@@ -384,6 +388,7 @@ async def fragment_update_agent(
         agent.system_prompt = system_prompt
         agent.style_preset = style_preset
         agent.participation_mode = participation_mode
+        agent.avatar_index = avatar_index
         await queries.update_agent(agent)
     locale = get_locale(request)
     strings = get_strings(locale)

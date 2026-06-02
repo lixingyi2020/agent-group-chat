@@ -1,4 +1,11 @@
 <div class="sidebar-header">{{ strings.conversations }}</div>
+<button class="btn-secondary"
+        style="margin: 0 var(--space-sm) var(--space-sm);"
+        hx-post="/fragments/conversations"
+        hx-target="#sidebar"
+        hx-swap="outerHTML">
+    {{ strings.new_chat }}
+</button>
 <div class="sidebar-list" id="conversation-list">
     {% if conversations %}
         {% for conv in conversations %}
@@ -34,12 +41,6 @@
     {% endif %}
 </div>
 <div class="sidebar-footer">
-    <button class="btn-secondary"
-            hx-post="/fragments/conversations"
-            hx-target="#sidebar"
-            hx-swap="outerHTML">
-        {{ strings.new_chat }}
-    </button>
     <a href="/settings" class="btn-secondary" style="display: block; text-align: center; text-decoration: none; margin-bottom: 4px;">
         {{ strings.settings }}
     </a>

@@ -171,17 +171,19 @@ def _row_to_agent(row: tuple) -> Agent:
     return Agent(id=row[0], name=row[1], llm_config_id=row[2],
                  system_prompt=row[3], style_preset=row[4],
                  participation_mode=row[5], probability=row[6],
-                 created_at=row[7])
+                 created_at=row[7],
+                 avatar_index=row[8] if len(row) > 8 else 0)
 
 
 async def create_agent(agent: Agent) -> Agent:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             """INSERT INTO agents (name, llm_config_id, system_prompt, style_preset,
-               participation_mode, probability)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+               participation_mode, probability, avatar_index)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (agent.name, agent.llm_config_id, agent.system_prompt,
-             agent.style_preset, agent.participation_mode, agent.probability),
+             agent.style_preset, agent.participation_mode, agent.probability,
+             agent.avatar_index),
         )
         await db.commit()
         row = await db.execute("SELECT * FROM agents WHERE id = ?", (cursor.lastrowid,))
@@ -207,11 +209,12 @@ async def update_agent(agent: Agent) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """UPDATE agents SET name=?, llm_config_id=?, system_prompt=?,
-               style_preset=?, participation_mode=?, probability=?
+               style_preset=?, participation_mode=?, probability=?,
+               avatar_index=?
                WHERE id=?""",
             (agent.name, agent.llm_config_id, agent.system_prompt,
              agent.style_preset, agent.participation_mode, agent.probability,
-             agent.id),
+             agent.avatar_index, agent.id),
         )
         await db.commit()
 

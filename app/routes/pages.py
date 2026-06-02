@@ -30,6 +30,7 @@ async def conversation_page(conversation_id: int, request: Request):
     messages = await queries.get_messages(conversation_id)
     agents = await queries.list_agents()
     agent_map = {a.id: a.name for a in agents}
+    avatar_map = {a.id: a.avatar_index for a in agents}
     enriched = []
     for msg in messages:
         enriched.append({
@@ -38,6 +39,7 @@ async def conversation_page(conversation_id: int, request: Request):
             "agent_id": msg.agent_id,
             "content": msg.content, "created_at": msg.created_at,
             "llm_name": agent_map.get(msg.agent_id, "") if msg.agent_id else "",
+            "avatar_idx": avatar_map.get(msg.agent_id, msg.llm_config_id or 0) if msg.agent_id else (msg.llm_config_id or 0) % 8,
         })
 
     ctx = _make_context(request, conversations=conversations, conversation=conversation,
