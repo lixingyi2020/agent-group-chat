@@ -7,7 +7,9 @@ and opens a pywebview window displaying the app.
 import os
 import sys
 import socket
+import time
 import threading
+import urllib.request
 
 # Ensure project root is on sys.path so 'app' and 'desktop' can be imported
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,6 +33,18 @@ def run_server(port: int) -> None:
     uvicorn.run("app.main:app", host="127.0.0.1", port=port, log_level="warning")
 
 
+def wait_for_server(url: str, timeout: int = 30) -> bool:
+    """Poll until the server responds, or timeout."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            urllib.request.urlopen(url, timeout=1)
+            return True
+        except Exception:
+            time.sleep(0.5)
+    return False
+
+
 def main() -> None:
     port = find_free_port()
 
@@ -44,6 +58,11 @@ def main() -> None:
     tray_icon = create_tray()
     tray_thread = threading.Thread(target=tray_icon.run, daemon=True)
     tray_thread.start()
+
+    # Wait for server to be ready before opening WebView
+    if not wait_for_server(url):
+        print(f"ERROR: Server did not start on {url}", file=sys.stderr)
+        sys.exit(1)
 
     # Open WebView window
     window = webview.create_window(
