@@ -68,14 +68,14 @@
         <div class="settings-section" id="section-llm-configs">
             <h2>{{ strings.llm_configs }}</h2>
             <p class="section-desc">{% if locale == 'zh' %}配置 LLM 提供商、模型和响应限制。{% else %}Configure LLM providers, models, and response limits.{% endif %}</p>
-            <div id="llm-configs-container" hx-get="/fragments/llm-configs" hx-trigger="load"></div>
+            <div id="llm-configs-container" hx-get="/fragments/llm-configs" hx-trigger="load once"></div>
         </div>
 
         <!-- AI Agents Section -->
         <div class="settings-section" id="section-agents">
             <h2>{{ strings.agents }}</h2>
             <p class="section-desc">{% if locale == 'zh' %}创建具有不同个性的 AI 助手。每个助手使用一个 LLM 配置作为后端。{% else %}Create AI agents with distinct personalities. Each agent uses an LLM config as its backend.{% endif %}</p>
-            <div id="agents-container" hx-get="/fragments/agents" hx-trigger="load"></div>
+            <div id="agents-container" hx-get="/fragments/agents" hx-trigger="load once"></div>
         </div>
 
         <!-- Language Section -->
