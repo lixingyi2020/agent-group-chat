@@ -2,50 +2,36 @@
 
 > **Status:** Approved | **Date:** 2026-06-03
 
-**Goal:** Adapt the existing Windows desktop app code to also build and run on macOS, reusing all existing cross-platform Python code.
+**Goal:** Add macOS desktop app support alongside the existing Windows desktop app, reusing the same `desktop/main.py` entry point and sharing all cross-platform code.
 
-**Context:** pywebview, pystray, and PyInstaller all support macOS. Only ~10 lines need to change.
+## Platform Differences
 
----
+| Aspect | Windows | macOS |
+|--------|---------|-------|
+| WebView backend | `edgechromium` (Edge WebView2) | `None` (native WKWebView via Cocoa) |
+| Build script | `build.bat` | `build_mac.sh` |
+| Console | `--noconsole` flag | `--windowed` flag (equivalent) |
+| Output | `dist/agent-chat/` portable folder | Same portable folder |
 
 ## Changes
 
-### 1. `desktop/main.py` — platform-aware GUI backend
+### `desktop/main.py` — platform-aware GUI backend
 
 ```python
 import platform
-
-if platform.system() == 'Windows':
-    GUI_BACKEND = 'edgechromium'
-else:
-    GUI_BACKEND = 'cocoa'
+GUI_BACKEND = 'edgechromium' if platform.system() == 'Windows' else None
 ```
 
-Guard the `ctypes.windll` exception handler with `platform.system() == 'Windows'`.
+`None` on macOS makes pywebview use the default Cocoa/WKWebView backend.
 
-### 2. `build.sh` — new macOS build script
+### `build_mac.sh` — new build script
 
-Same as `build.bat` but using Unix shell syntax and `--windowed` (macOS equivalent of `--noconsole`).
+Identical to `build.bat` but:
+- Shell syntax instead of batch
+- `python3` instead of `python`
+- `--windowed` instead of `--noconsole`
+- Unix-style line endings
 
-### 3. `requirements.txt` — no changes needed
+### No other changes
 
-`pywebview` and `pystray` already support macOS via `pyobjc` (auto-installed as optional dependency).
-
----
-
-## Files
-
-| File | Change |
-|------|--------|
-| `desktop/main.py` | Platform-aware `GUI_BACKEND`, guard Windows-only code |
-| `build.sh` | New: macOS PyInstaller build script |
-
-## Build (on Mac)
-
-```bash
-git clone https://github.com/lixingyi2020/agent-group-chat.git
-cd agent-group-chat
-pip install -r requirements.txt pyobjc
-bash build.sh
-# Output: dist/agent-chat/agent-chat
-```
+All existing code (`app/*`, `desktop/tray.py`, `build.bat`) is unchanged and platform-agnostic.

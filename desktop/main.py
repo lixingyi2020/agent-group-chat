@@ -1,4 +1,4 @@
-"""Desktop application entry point — Windows and macOS.
+"""Desktop application entry point.
 
 Starts the FastAPI server in a daemon thread, creates a system tray icon,
 and opens a pywebview window displaying the app.
@@ -6,9 +6,9 @@ and opens a pywebview window displaying the app.
 
 import os
 import sys
-import platform
 import socket
 import time
+import platform
 import threading
 import urllib.request
 
@@ -16,7 +16,8 @@ import webview
 from app.utils import get_base_dir
 from desktop.tray import create_tray
 
-GUI_BACKEND = 'edgechromium' if platform.system() == 'Windows' else 'cocoa'
+# Windows uses Edge WebView2 (pre-installed on Win11); macOS uses native WKWebView
+GUI_BACKEND = 'edgechromium' if platform.system() == 'Windows' else None
 
 def find_free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -97,9 +98,8 @@ if __name__ == "__main__":
             import traceback
             f.write(f"FATAL: {e}\n\n")
             traceback.print_exc(file=f)
-        if platform.system() == 'Windows':
-            try:
-                import ctypes
-                ctypes.windll.user32.MessageBoxW(0, f"Startup failed:\n\n{e}", "AI Agent Chat", 0x10)
-            except Exception:
-                pass
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(0, f"Startup failed:\n\n{e}", "AI Agent Chat", 0x10)
+        except Exception:
+            pass

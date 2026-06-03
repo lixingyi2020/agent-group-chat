@@ -1,7 +1,9 @@
 #!/bin/bash
+set -e
+
 echo "Building agent-chat macOS desktop app..."
 
-python -m PyInstaller \
+python3 -m PyInstaller \
   --onedir \
   --name "agent-chat" \
   --add-data "app:app" \
@@ -15,15 +17,9 @@ python -m PyInstaller \
   --hidden-import anyio \
   --hidden-import httpx \
   --hidden-import aiosqlite \
+  --hidden-import pystray \
   --hidden-import PIL._imaging \
   --hidden-import cryptography.fernet \
-  --collect-all fastapi \
-  --collect-all starlette \
-  --collect-all pydantic \
-  --collect-all anyio \
-  --collect-all httpx \
-  --collect-all jinja2 \
-  --collect-all cryptography \
   --hidden-import app \
   --hidden-import app.utils \
   --hidden-import app.main \
@@ -47,13 +43,16 @@ python -m PyInstaller \
   --hidden-import app.routes.fragments \
   --hidden-import app.routes.stream \
   --hidden-import app.routes.settings \
+  --collect-all fastapi \
+  --collect-all starlette \
+  --collect-all pydantic \
+  --collect-all anyio \
+  --collect-all httpx \
+  --collect-all jinja2 \
+  --collect-all cryptography \
   --windowed \
   desktop/main.py
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "Build successful! Output: dist/agent-chat/"
-else
-    echo ""
-    echo "Build FAILED. Check errors above."
-fi
+echo ""
+echo "Build complete. Output: dist/agent-chat/"
+echo "Run: open dist/agent-chat/agent-chat"
