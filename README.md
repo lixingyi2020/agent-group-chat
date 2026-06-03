@@ -22,7 +22,7 @@ A web-based chat application where you converse with multiple AI LLMs in a singl
 - Python 3.11+
 - pip
 
-### Installation / 安装
+### Web App / Web 应用
 
 ```bash
 # Clone the repository / 克隆仓库
@@ -31,16 +31,37 @@ cd agent-group-chat
 
 # Install dependencies / 安装依赖
 pip install -r requirements.txt
-```
 
-### Run / 运行
-
-```bash
 # Start the server / 启动服务器
 python run.py
 ```
 
 Open your browser to **http://127.0.0.1:8000** / 打开浏览器访问 **http://127.0.0.1:8000**
+
+### Desktop App / 桌面应用
+
+Build a standalone desktop app with system tray — no terminal needed.
+
+```bash
+# Install build dependencies / 安装打包依赖
+pip install pyinstaller pystray pillow pywebview
+
+# Windows / Windows 平台
+build.bat
+
+# macOS / macOS 平台
+bash build_mac.sh
+```
+
+Output: `dist/agent-chat/` — double-click `agent-chat.exe` (Windows) or `open agent-chat` (macOS) to launch.
+
+输出的桌面应用位于 `dist/agent-chat/` — 双击 `agent-chat.exe`（Windows）或在终端执行 `open agent-chat`（macOS）启动。
+
+| Feature | Windows | macOS |
+|---------|---------|-------|
+| WebView backend | Edge WebView2 | Native WKWebView |
+| System tray | ✓ | ✓ |
+| Close to tray | ✓ | ✓ |
 
 ### First-Time Setup / 首次设置
 
@@ -99,8 +120,13 @@ agent-chat/
 │   ├── templates/           # Jinja2 + HTMX templates
 │   ├── i18n/                # Chinese + English strings
 │   └── crypto.py            # Fernet encryption
+├── desktop/
+│   ├── main.py              # Desktop app entry (webview + tray)
+│   └── tray.py              # System tray icon
 ├── tests/                   # pytest test suite
 ├── static/style.css
+├── build.bat                # Windows desktop build script
+├── build_mac.sh             # macOS desktop build script
 ├── requirements.txt
 └── run.py
 ```
