@@ -1,15 +1,10 @@
-import sys
 import os
 import aiosqlite
 from typing import Optional
 from app.db.models import Conversation, Message, LLMConfig, Agent, ApiKey, Setting
+from app.utils import get_base_dir
 
-def _get_base_dir():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-DB_PATH = os.path.join(_get_base_dir(), "chat.db")
+DB_PATH = os.path.join(get_base_dir(), "chat.db")
 
 
 def _row_to_conversation(row: tuple) -> Conversation:

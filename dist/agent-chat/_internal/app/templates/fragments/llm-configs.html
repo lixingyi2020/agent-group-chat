@@ -1,0 +1,153 @@
+{% for config in configs %}
+<div id="llm-config-{{ config.id }}" class="settings-card" data-searchable="{{ config.provider }} {{ config.model }}">
+    <!-- View mode -->
+    <div id="llm-config-view-{{ config.id }}">
+        <div class="settings-row">
+            <span class="row-label">{{ config.provider }} / {{ config.model }}</span>
+            <div class="row-control">
+                <button class="btn-secondary" style="width: auto;"
+                        onclick="toggleEditConfig({{ config.id }})">✎ Edit</button>
+                <button class="btn-secondary" style="width: auto;"
+                        hx-delete="/fragments/llm-configs/{{ config.id }}"
+                        hx-target="#llm-config-{{ config.id }}"
+                        hx-swap="outerHTML">{{ strings.delete }}</button>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.max_response_chars }}</span>
+            <span style="font-size: 0.78rem; color: var(--text-secondary); font-family: var(--font-mono);">{{ config.max_response_chars }}</span>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{% if locale == 'zh' %}默认生成标题{% else %}Default Title Generator{% endif %}</span>
+            <span style="font-size: 0.78rem;">{% if config.is_title_generator %}★{% else %}—{% endif %}</span>
+        </div>
+    </div>
+    <!-- Edit mode -->
+    <div id="llm-config-edit-{{ config.id }}" style="display: none;">
+        <form hx-put="/fragments/llm-configs/{{ config.id }}"
+              hx-target="#llm-config-{{ config.id }}"
+              hx-swap="outerHTML">
+            <div class="settings-row">
+                <span class="row-label">{{ strings.model }}</span>
+                <div class="row-control">
+                    <input name="model" value="{{ config.model }}" required>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{{ strings.api_keys }}</span>
+                <div class="row-control">
+                    <select name="api_key_id">
+                        {% for key in api_keys %}
+                        <option value="{{ key.id }}" {% if key.id == config.api_key_id %}selected{% endif %}>{{ key.provider }} — ••••••••</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{% if locale == 'zh' %}默认生成标题{% else %}Default Title Generator{% endif %}</span>
+                <div class="row-control">
+                    <input type="checkbox" name="is_title_generator" value="true"
+                           {% if config.is_title_generator %}checked{% endif %}
+                           style="accent-color: var(--accent);">
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="row-control" style="margin-left: auto;">
+                    <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
+                    <button class="btn-secondary" type="button" style="width: auto;"
+                            onclick="toggleEditConfig({{ config.id }})">{{ strings.cancel }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<div class="settings-card" id="llm-config-add">
+    <div class="settings-card-header">{{ strings.add_llm }}</div>
+    {% if api_keys %}
+    <form hx-post="/fragments/llm-configs"
+          hx-target="#llm-configs-container">
+        <div class="settings-row">
+            <span class="row-label">{{ strings.provider }}</span>
+            <div class="row-control">
+                <select name="provider" required>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="zhipu">智谱 (GLM)</option>
+                    <option value="kimi">Kimi (Moonshot)</option>
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.model }}</span>
+            <div class="row-control">
+                <input name="model" placeholder="e.g. gpt-4o" required>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.api_keys }}</span>
+            <div class="row-control">
+                <select name="api_key_id" required>
+                    {% for key in api_keys %}
+                    <option value="{{ key.id }}">{{ key.provider }} — ••••••••</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="row-control" style="margin-left: auto;">
+                <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="settings-row">
+        <span style="font-size: 0.78rem; color: #f59e0b;">{% if locale == 'zh' %}尚未配置 API 密钥，请先添加：{% else %}No API keys configured yet. Add one below:{% endif %}</span>
+    </div>
+    <form hx-post="/fragments/quick-add-key"
+          hx-target="#llm-configs-container"
+          hx-swap="innerHTML">
+        <div class="settings-row">
+            <span class="row-label">{{ strings.provider }}</span>
+            <div class="row-control">
+                <select name="provider" required>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="zhipu">智谱 (GLM)</option>
+                    <option value="kimi">Kimi (Moonshot)</option>
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.key }}</span>
+            <div class="row-control">
+                <input name="key" type="password" placeholder="sk-..." required>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="row-control" style="margin-left: auto;">
+                <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.add_key }}</button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+function toggleEditConfig(id) {
+    var view = document.getElementById('llm-config-view-' + id);
+    var edit = document.getElementById('llm-config-edit-' + id);
+    if (view.style.display === 'none') {
+        view.style.display = '';
+        edit.style.display = 'none';
+    } else {
+        view.style.display = 'none';
+        edit.style.display = '';
+    }
+}
+</script>

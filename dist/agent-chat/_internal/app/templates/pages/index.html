@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include "fragments/conversations.html" %}
+{% endblock %}
+{% block content %}
+<div id="chat-area" style="display: flex; flex-direction: column; height: 100%;">
+    {% if conversation %}
+        {% include "fragments/messages.html" %}
+    {% else %}
+        <div class="empty-state">{{ strings.no_conversations }}</div>
+    {% endif %}
+</div>
+{% endblock %}

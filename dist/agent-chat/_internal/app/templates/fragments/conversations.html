@@ -1,0 +1,90 @@
+<div class="sidebar-header">{{ strings.conversations }}</div>
+<button class="btn-secondary"
+        style="margin: 0 var(--space-sm) var(--space-sm);"
+        hx-post="/fragments/conversations"
+        hx-target="#sidebar"
+        hx-swap="outerHTML">
+    {{ strings.new_chat }}
+</button>
+<div class="sidebar-list" id="conversation-list">
+    {% if conversations %}
+        {% for conv in conversations %}
+        <div class="conversation-item-wrapper" style="display: flex; align-items: center; gap: 4px;">
+            <a href="/conversations/{{ conv.id }}"
+               class="conversation-item {% if active_id == conv.id %}active{% endif %}"
+               style="flex: 1; min-width: 0;">
+                <span class="conv-title-text" id="conv-title-{{ conv.id }}">{{ conv.title or "Untitled" }}</span>
+            </a>
+            <span class="sidebar-edit-btn" id="sidebar-edit-btn-{{ conv.id }}"
+                  style="cursor: pointer; color: var(--text-muted); font-size: 10px; flex-shrink: 0; padding: 2px;"
+                  onclick="startSidebarEdit({{ conv.id }}, '{{ conv.title or '' }}')" title="Edit title">✎</span>
+            <span style="cursor: pointer; color: var(--text-muted); font-size: 10px; flex-shrink: 0; padding: 2px;"
+                  hx-delete="/fragments/conversations/{{ conv.id }}"
+                  hx-target="#sidebar"
+                  hx-swap="outerHTML"
+                  hx-confirm="{{ 'Delete this conversation?' if locale == 'en' else '确定删除此对话？' }}"
+                  title="Delete">✕</span>
+            <form id="sidebar-edit-form-{{ conv.id }}" style="display: none; flex: 1;"
+                  hx-put="/fragments/conversations/{{ conv.id }}/title"
+                  hx-target="#conv-title-{{ conv.id }}"
+                  hx-swap="outerHTML"
+                  hx-on::after-request="refreshSidebarTitle({{ conv.id }})">
+                <input name="title" id="sidebar-edit-input-{{ conv.id }}" value="{{ conv.title or '' }}"
+                       style="background: var(--bg-tertiary); border: 1px solid var(--accent-blue);
+                              border-radius: 4px; padding: 2px 6px; color: var(--text-primary); font-size: 12px; width: 100%;">
+                <button type="submit" style="display: none;"></button>
+            </form>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">{{ strings.no_conversations }}</div>
+    {% endif %}
+</div>
+<div class="sidebar-footer">
+    <a href="/settings" class="btn-secondary" style="display: block; text-align: center; text-decoration: none; margin-bottom: 4px;">
+        {{ strings.settings }}
+    </a>
+    <div class="lang-switcher">
+        <span>{{ strings.language }}</span>
+        <select name="lang" hx-post="/fragments/settings/language" hx-swap="none">
+            <option value="zh" {% if locale == 'zh' %}selected{% endif %}>中文</option>
+            <option value="en" {% if locale == 'en' %}selected{% endif %}>English</option>
+        </select>
+    </div>
+</div>
+
+<script>
+function startSidebarEdit(convId, currentTitle) {
+    document.getElementById('sidebar-edit-btn-' + convId).style.display = 'none';
+    document.getElementById('conv-title-' + convId).parentElement.style.display = 'none';
+    var form = document.getElementById('sidebar-edit-form-' + convId);
+    form.style.display = 'flex';
+    var input = document.getElementById('sidebar-edit-input-' + convId);
+    input.value = currentTitle;
+    input.focus();
+    input.select();
+    input.addEventListener('blur', function() { form.querySelector('button').click(); });
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { form.querySelector('button').click(); }
+        if (e.key === 'Escape') { cancelSidebarEdit(convId); }
+    });
+}
+
+function cancelSidebarEdit(convId) {
+    document.getElementById('sidebar-edit-btn-' + convId).style.display = '';
+    document.getElementById('conv-title-' + convId).parentElement.style.display = '';
+    document.getElementById('sidebar-edit-form-' + convId).style.display = 'none';
+}
+
+function refreshSidebarTitle(convId) {
+    cancelSidebarEdit(convId);
+    // Also refresh the header title if it's the active conversation
+    var headerTitle = document.getElementById('conversation-title-text');
+    if (headerTitle) {
+        var newTitle = document.getElementById('conv-title-' + convId);
+        if (newTitle) {
+            headerTitle.textContent = newTitle.textContent;
+        }
+    }
+}
+</script>

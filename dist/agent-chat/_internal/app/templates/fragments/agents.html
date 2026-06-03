@@ -1,0 +1,239 @@
+{% for agent in agents %}
+<div id="agent-{{ agent.id }}" class="settings-card" data-searchable="{{ agent.name }} {{ agent.style_preset }}">
+    <!-- View mode -->
+    <div id="agent-view-{{ agent.id }}">
+        <div class="settings-row">
+            <span class="row-label" style="display: flex; align-items: center; gap: 8px;">
+                <span class="message-avatar avatar-{{ agent.avatar_index }}" style="width: 24px; height: 24px; font-size: 10px; display: inline-flex;">{{ agent.name[0] }}</span>
+                {{ agent.name }}
+            </span>
+            <div class="row-control">
+                <button class="btn-secondary" style="width: auto;"
+                        onclick="toggleEditAgent({{ agent.id }})">✎ Edit</button>
+                <button class="btn-secondary" style="width: auto;"
+                        hx-delete="/fragments/agents/{{ agent.id }}"
+                        hx-target="#agent-{{ agent.id }}"
+                        hx-swap="outerHTML">{{ strings.delete }}</button>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.base_llm }}</span>
+            <span style="font-size: 0.78rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                {{ llm_map[agent.llm_config_id].provider }} / {{ llm_map[agent.llm_config_id].model }}
+            </span>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.style_preset }}</span>
+            <span style="font-size: 0.78rem; color: var(--text-secondary); font-family: var(--font-mono);">{{ agent.style_preset }}</span>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.participation_mode }}</span>
+            <span style="font-size: 0.78rem; color: var(--text-secondary); font-family: var(--font-mono);">{{ agent.participation_mode }}</span>
+        </div>
+    </div>
+    <!-- Edit mode -->
+    <div id="agent-edit-{{ agent.id }}" style="display: none;">
+        <form hx-put="/fragments/agents/{{ agent.id }}"
+              hx-target="#agent-{{ agent.id }}"
+              hx-swap="outerHTML">
+            <div class="settings-row">
+                <span class="row-label">{{ strings.name }}</span>
+                <div class="row-control">
+                    <input name="name" value="{{ agent.name }}" required>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{% if locale == 'zh' %}头像颜色{% else %}Avatar{% endif %}</span>
+                <div class="row-control avatar-picker" data-agent="{{ agent.id }}">
+                    {% for i in range(8) %}
+                    <span class="avatar-swatch avatar-{{ i }}" data-index="{{ i }}"
+                          style="width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; font-weight: 600; opacity: {{ '1' if agent.avatar_index == i else '0.4' }}; transition: opacity 0.15s;"
+                          onclick="selectAvatar({{ agent.id }}, {{ i }})">{{ agent.name[0] }}</span>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="avatar_index" value="{{ agent.avatar_index }}" id="avatar-input-{{ agent.id }}">
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{{ strings.base_llm }}</span>
+                <div class="row-control">
+                    <select name="llm_config_id">
+                        {% for llm in llm_configs %}
+                        <option value="{{ llm.id }}" {% if llm.id == agent.llm_config_id %}selected{% endif %}>
+                            {{ llm.provider }} / {{ llm.model }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{{ strings.style_preset }}</span>
+                <div class="row-control">
+                    <select name="style_preset" onchange="updateStylePrompt(this, {{ agent.id }})">
+                        <option value="brief" {% if agent.style_preset == 'brief' %}selected{% endif %}>{{ strings.style_brief }}</option>
+                        <option value="rigorous" {% if agent.style_preset == 'rigorous' %}selected{% endif %}>{{ strings.style_rigorous }}</option>
+                        <option value="witty" {% if agent.style_preset == 'witty' %}selected{% endif %}>{{ strings.style_witty }}</option>
+                        <option value="custom" {% if agent.style_preset == 'custom' %}selected{% endif %}>{{ strings.style_custom }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row" style="flex-direction: column; align-items: stretch;">
+                <span class="row-label" style="margin-bottom: 4px;">{{ strings.system_prompt }}</span>
+                <textarea name="system_prompt" id="agent-prompt-{{ agent.id }}" rows="3"
+                          style="background: var(--bg-raised); border: 1px solid var(--border-base);
+                                 border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-primary);
+                                 font-family: var(--font-mono); font-size: 0.72rem; resize: vertical;
+                                 outline: none; width: 100%;">{{ agent.system_prompt }}</textarea>
+            </div>
+            <div class="settings-row">
+                <span class="row-label">{{ strings.participation_mode }}</span>
+                <div class="row-control">
+                    <select name="participation_mode">
+                        <option value="mention_only" {% if agent.participation_mode == 'mention_only' %}selected{% endif %}>{{ strings.mention_only }}</option>
+                        <option value="always" {% if agent.participation_mode == 'always' %}selected{% endif %}>{{ strings.always }}</option>
+                        <option value="probabilistic" {% if agent.participation_mode == 'probabilistic' %}selected{% endif %}>{{ strings.probabilistic }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="row-control" style="margin-left: auto;">
+                    <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
+                    <button class="btn-secondary" type="button" style="width: auto;"
+                            onclick="toggleEditAgent({{ agent.id }})">{{ strings.cancel }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<div class="settings-card" id="agent-add">
+    <div class="settings-card-header">{{ strings.add_agent }}</div>
+    {% if llm_configs %}
+    <form hx-post="/fragments/agents"
+          hx-target="#agents-container">
+        <div class="settings-row">
+            <span class="row-label">{{ strings.name }}</span>
+            <div class="row-control">
+                <input name="name" placeholder="{{ strings.name }}" required>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{% if locale == 'zh' %}头像颜色{% else %}Avatar{% endif %}</span>
+            <div class="row-control avatar-picker" data-agent="new">
+                {% for i in range(8) %}
+                <span class="avatar-swatch avatar-{{ i }}" data-index="{{ i }}"
+                      style="width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; font-weight: 600; opacity: 0.4; transition: opacity 0.15s;"
+                      onclick="selectNewAvatar({{ i }})">{{ strings.agents[0] if strings.agents else 'A' }}</span>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="avatar_index" value="0" id="avatar-input-new">
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.base_llm }}</span>
+            <div class="row-control">
+                <select name="llm_config_id" required>
+                    {% for llm in llm_configs %}
+                    <option value="{{ llm.id }}">{{ llm.provider }} / {{ llm.model }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.style_preset }}</span>
+            <div class="row-control">
+                <select name="style_preset" onchange="updateNewStylePrompt(this)">
+                    <option value="brief">{{ strings.style_brief }}</option>
+                    <option value="rigorous">{{ strings.style_rigorous }}</option>
+                    <option value="witty">{{ strings.style_witty }}</option>
+                    <option value="custom">{{ strings.style_custom }}</option>
+                </select>
+            </div>
+        </div>
+        <div class="settings-row" style="flex-direction: column; align-items: stretch;">
+            <span class="row-label" style="margin-bottom: 4px;">{{ strings.system_prompt }}</span>
+            <textarea name="system_prompt" id="new-agent-prompt" rows="3" placeholder="{{ strings.system_prompt }}"
+                      style="background: var(--bg-raised); border: 1px solid var(--border-base);
+                             border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-primary);
+                             font-family: var(--font-mono); font-size: 0.72rem; resize: vertical;
+                             outline: none; width: 100%;"></textarea>
+        </div>
+        <div class="settings-row">
+            <span class="row-label">{{ strings.participation_mode }}</span>
+            <div class="row-control">
+                <select name="participation_mode" required>
+                    <option value="mention_only">{{ strings.mention_only }}</option>
+                    <option value="always">{{ strings.always }}</option>
+                    <option value="probabilistic">{{ strings.probabilistic }}</option>
+                </select>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="row-control" style="margin-left: auto;">
+                <button class="btn-secondary" type="submit" style="width: auto;">{{ strings.save }}</button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="settings-row">
+        <span style="font-size: 0.78rem; color: #f59e0b;">{% if locale == 'zh' %}请先在上方添加 LLM 配置。{% else %}No LLM configs yet. Add one above first.{% endif %}</span>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+const STYLE_PROMPTS = {
+    brief_prompt: "Reply concisely. Keep responses under 2-3 sentences. Get straight to the point.",
+    rigorous_prompt: "Reply with rigorous reasoning. Consider edge cases. Be precise and accurate.",
+    witty_prompt: "Reply with humor and wit. Use playful language and occasional jokes.",
+    custom_prompt: ""
+};
+
+function updateStylePrompt(select, agentId) {
+    var textarea = document.getElementById('agent-prompt-' + agentId);
+    var key = select.value + '_prompt';
+    if (STYLE_PROMPTS[key] !== undefined) {
+        textarea.value = STYLE_PROMPTS[key];
+    }
+}
+
+function updateNewStylePrompt(select) {
+    var textarea = document.getElementById('new-agent-prompt');
+    var key = select.value + '_prompt';
+    if (STYLE_PROMPTS[key] !== undefined) {
+        textarea.value = STYLE_PROMPTS[key];
+    }
+}
+
+function selectAvatar(agentId, index) {
+    var input = document.getElementById('avatar-input-' + agentId);
+    if (input) input.value = index;
+    var picker = document.querySelector('.avatar-picker[data-agent="' + agentId + '"]');
+    if (picker) {
+        picker.querySelectorAll('.avatar-swatch').forEach(function(s, i) {
+            s.style.opacity = i === index ? '1' : '0.4';
+        });
+    }
+}
+function selectNewAvatar(index) {
+    var input = document.getElementById('avatar-input-new');
+    if (input) input.value = index;
+    var picker = document.querySelector('.avatar-picker[data-agent="new"]');
+    if (picker) {
+        picker.querySelectorAll('.avatar-swatch').forEach(function(s, i) {
+            s.style.opacity = i === index ? '1' : '0.4';
+        });
+    }
+}
+
+function toggleEditAgent(id) {
+    var view = document.getElementById('agent-view-' + id);
+    var edit = document.getElementById('agent-edit-' + id);
+    if (view.style.display === 'none') {
+        view.style.display = '';
+        edit.style.display = 'none';
+    } else {
+        view.style.display = 'none';
+        edit.style.display = '';
+    }
+}
+</script>

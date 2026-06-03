@@ -25,6 +25,7 @@ python -m PyInstaller ^
   --collect-all httpx ^
   --collect-all jinja2 ^
   --hidden-import app ^
+  --hidden-import app.utils ^
   --hidden-import app.main ^
   --hidden-import app.crypto ^
   --hidden-import app.orchestrator ^
