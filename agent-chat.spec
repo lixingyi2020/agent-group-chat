@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('app', 'app'), ('static', 'static')]
 binaries = []
-hiddenimports = ['fastapi', 'starlette', 'pydantic', 'uvicorn', 'uvicorn.loops.auto', 'uvicorn.protocols.http.auto', 'anyio', 'httpx', 'aiosqlite', 'pystray._win32', 'PIL._imaging', 'cryptography.fernet', 'app', 'app.main', 'app.crypto', 'app.orchestrator', 'app.templates', 'app.db', 'app.db.models', 'app.db.migrations', 'app.db.queries', 'app.i18n', 'app.i18n.en', 'app.i18n.zh', 'app.providers', 'app.providers.base', 'app.providers.openai', 'app.providers.anthropic', 'app.providers.google', 'app.routes', 'app.routes.pages', 'app.routes.fragments', 'app.routes.stream', 'app.routes.settings']
+hiddenimports = ['fastapi', 'starlette', 'pydantic', 'uvicorn', 'uvicorn.loops.auto', 'uvicorn.protocols.http.auto', 'anyio', 'httpx', 'aiosqlite', 'pystray', 'webview', 'multipart', 'app', 'app.utils', 'app.main', 'app.crypto', 'app.orchestrator', 'app.templates', 'app.db', 'app.db.models', 'app.db.migrations', 'app.db.queries', 'app.i18n', 'app.i18n.en', 'app.i18n.zh', 'app.providers', 'app.providers.base', 'app.providers.openai', 'app.providers.anthropic', 'app.providers.google', 'app.routes', 'app.routes.pages', 'app.routes.fragments', 'app.routes.stream', 'app.routes.settings']
 tmp_ret = collect_all('fastapi')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('starlette')
@@ -18,10 +18,18 @@ tmp_ret = collect_all('jinja2')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('cryptography')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('pywebview')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('pystray')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('Pillow')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('multipart')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['desktop\\main.py'],
+    ['desktop/main.py'],
     pathex=[],
     binaries=binaries,
     datas=datas,
@@ -60,4 +68,10 @@ coll = COLLECT(
     upx=True,
     upx_exclude=[],
     name='agent-chat',
+)
+app = BUNDLE(
+    coll,
+    name='agent-chat.app',
+    icon=None,
+    bundle_identifier=None,
 )

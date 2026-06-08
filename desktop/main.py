@@ -58,12 +58,17 @@ def main(log_path: str) -> None:
 
     url = f"http://127.0.0.1:{port}"
 
-    try:
-        tray_icon = create_tray()
-        threading.Thread(target=tray_icon.run, daemon=True).start()
-        log("Tray icon created")
-    except Exception as e:
-        log(f"Tray error: {e}")
+    # pystray and pywebview both need NSApplication on macOS — they conflict.
+    # Skip the tray icon on macOS; dock and Cmd+Q provide equivalent functionality.
+    if platform.system() != 'Darwin':
+        try:
+            tray_icon = create_tray()
+            threading.Thread(target=tray_icon.run, daemon=True).start()
+            log("Tray icon created")
+        except Exception as e:
+            log(f"Tray error: {e}")
+    else:
+        log("Skipping tray icon on macOS (incompatible with pywebview)")
 
     log("Waiting for server...")
     if not wait_for_server(url):
