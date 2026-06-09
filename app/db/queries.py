@@ -1,7 +1,7 @@
 import os
 import aiosqlite
 from typing import Optional
-from app.db.models import Conversation, Message, LLMConfig, Agent, ApiKey, Setting
+from app.db.models import Conversation, Message, LLMConfig, Agent, ApiKey
 from app.utils import get_base_dir
 
 DB_PATH = os.path.join(get_base_dir(), "chat.db")

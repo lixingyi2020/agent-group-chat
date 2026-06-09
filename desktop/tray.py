@@ -20,14 +20,14 @@ def _make_icon() -> Image.Image:
 
 def create_tray() -> pystray.Icon:
 
-    def on_open(icon, item):
+    def on_open(icon, _):
         import webview
         windows = webview.windows
         if windows:
             windows[0].show()
             windows[0].restore()
 
-    def on_exit(icon, item):
+    def on_exit(icon, _):
         icon.stop()
         # Graceful: destroy WebView windows, unblock webview.start(), let main() return
         import webview
