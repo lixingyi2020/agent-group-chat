@@ -16,6 +16,17 @@ MENTION_RE = re.compile(r"@(\S+)")
 MAX_CHAIN_DEPTH = 2
 MAX_CONCURRENT = 5
 
+# Debate: LLMs auto-debate each other's answers after user raises a topic
+MIN_DEBATE_ROUNDS = 1
+MAX_DEBATE_ROUNDS = 5
+DEBATE_PROMPT = (
+    "Critically analyze the previous responses above. "
+    "If you disagree, explain why and offer evidence. "
+    "If you agree, add new supporting points or perspectives. "
+    "Avoid simply repeating what has already been said. "
+    "Be concise and focused."
+)
+
 T = TypeVar("T")
 
 
@@ -99,6 +110,7 @@ async def _run_llm_generation(
     conversation_id: int,
     event_queue: asyncio.Queue,
     depth: int = 0,
+    debate_context: str = None,
 ) -> Optional[Message]:
     config = await queries.get_llm_config(agent.llm_config_id)
     if not config:
@@ -122,6 +134,10 @@ async def _run_llm_generation(
 
         api_key = decrypt(api_key_record.key_encrypted)
         messages = await _build_messages(conversation_id)
+
+        # Inject debate instruction as a user message so the LLM responds to it
+        if debate_context:
+            messages.append({"role": "user", "content": debate_context})
 
         # Reasoning models (DeepSeek) burn tokens on internal thought — give them headroom
         if config.provider == "deepseek":
@@ -253,3 +269,35 @@ async def orchestrate_llm_responses(
             await _run_llm_generation(agent, conversation_id, event_queue, depth)
 
     await asyncio.gather(*[_run_with_limit(a) for a in tasks_to_run])
+
+    # ── Debate rounds ──────────────────────────────────────────────────────
+    if depth == 0:
+        for round_num in range(1, MAX_DEBATE_ROUNDS + 1):
+            agents = await queries.list_agents()
+
+            # Select debate participants: always + probabilistic agents
+            debaters = []
+            for agent in agents:
+                if agent.participation_mode == "always":
+                    debaters.append(agent)
+                elif agent.participation_mode == "probabilistic" and random.random() < agent.probability:
+                    debaters.append(agent)
+
+            if len(debaters) < 2:
+                break
+
+            debate_context = f"[Debate Round {round_num}] {DEBATE_PROMPT}"
+            print(f"[Orchestrator] Debate round {round_num}: {[a.name for a in debaters]}", flush=True)
+
+            async def _run_debate(agent: Agent):
+                async with semaphore:
+                    return await _run_llm_generation(
+                        agent, conversation_id, event_queue, depth, debate_context
+                    )
+
+            results = await asyncio.gather(*[_run_debate(a) for a in debaters])
+            responded = [r for r in results if r is not None]
+            print(f"[Orchestrator] Debate round {round_num}: {len(responded)} responded", flush=True)
+
+            if len(responded) < 2 and round_num >= MIN_DEBATE_ROUNDS:
+                break
